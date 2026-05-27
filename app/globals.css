@@ -1,0 +1,380 @@
+@import "tailwindcss";
+@import "maplibre-gl/dist/maplibre-gl.css";
+
+@theme {
+  /* --- Shadcn/UI & Standard Color Mapping --- */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* --- Border Radius Mapping --- */
+  --radius-xl: var(--radius);
+  --radius-lg: calc(var(--radius) - 2px);
+  --radius-md: calc(var(--radius) - 4px);
+  --radius-sm: calc(var(--radius) - 6px);
+
+  /* --- Shadow System Utilities --- */
+  --shadow-xs: var(--shadow-xs);
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+  --shadow-xl: var(--shadow-xl);
+  --shadow-2xl: var(--shadow-2xl);
+
+  /* --- Custom SéismoHaïti Brand Colors --- */
+  --color-navy-dark: #0d2b55;
+  --color-navy-mid: #1a5e9a;
+  --color-electric-blue: #2e8bc0;
+  --color-seismo-glow: oklch(0.48 0.22 225 / 0.25);
+
+  /* --- Custom Animations --- */
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    10% { transform: translateX(-6px) rotate(-1deg); }
+    20% { transform: translateX(6px) rotate(1deg); }
+    30% { transform: translateX(-5px) rotate(-0.5deg); }
+    40% { transform: translateX(5px) rotate(0.5deg); }
+    50% { transform: translateX(-4px); }
+    60% { transform: translateX(4px); }
+    70% { transform: translateX(-3px); }
+    80% { transform: translateX(3px); }
+    90% { transform: translateX(-2px); }
+  }
+
+  @keyframes float-up {
+    0% { opacity: 0; transform: translateY(20px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes glow-pulse {
+    0%, 100% { box-shadow: 0 0 20px var(--seismo-glow); }
+    50% { box-shadow: 0 0 40px var(--seismo-glow), 0 0 60px var(--seismo-glow); }
+  }
+
+  @keyframes wave-propagate {
+    0% { r: 5; opacity: 1; }
+    100% { r: 80; opacity: 0; }
+  }
+
+  /* NEW ANIMATIONS FOR ENHANCED UX */
+  @keyframes pulse-seismo {
+    0%, 100% { 
+      box-shadow: 0 0 0 0 var(--primary / 0.7);
+    }
+    50% { 
+      box-shadow: 0 0 0 10px var(--primary / 0);
+    }
+  }
+
+  @keyframes shimmer {
+    0% { background-position: -1000px 0; }
+    100% { background-position: 1000px 0; }
+  }
+
+  @keyframes hover-lift {
+    0% { 
+      transform: translateY(0);
+      box-shadow: var(--shadow-sm);
+    }
+    100% { 
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+  }
+
+  @keyframes button-press {
+    0% { transform: scale(1); }
+    50% { transform: scale(0.98); }
+    100% { transform: scale(1); }
+  }
+
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes slide-in-from-top {
+    from { 
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to { 
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes slide-in-from-bottom {
+    from { 
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to { 
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Animation Assignments */
+  --animate-shake: shake 0.6s ease-in-out;
+  --animate-float-up: float-up 0.5s ease-out forwards;
+  --animate-glow-pulse: glow-pulse 2s ease-in-out infinite;
+  --animate-wave-propagate: wave-propagate 2s ease-out infinite;
+  --animate-pulse-seismo: pulse-seismo 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  --animate-shimmer: shimmer 2s infinite;
+  --animate-hover-lift: hover-lift 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  --animate-button-press: button-press 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --animate-fade-in: fade-in 300ms ease-out forwards;
+  --animate-slide-in-top: slide-in-from-top 300ms ease-out forwards;
+  --animate-slide-in-bottom: slide-in-from-bottom 300ms ease-out forwards;
+}
+
+/* --- Base Layer & Variables --- */
+@layer base {
+  :root {
+    /* Sisayiti — dark navy theme (default) */
+    --background: oklch(0.11 0.04 240);
+    --foreground: oklch(0.99 0 0);
+    --card: oklch(0.15 0.045 240);
+    --card-foreground: oklch(0.99 0 0);
+    --popover: oklch(0.14 0.04 240);
+    --popover-foreground: oklch(0.99 0 0);
+    --primary: oklch(0.48 0.22 225);            /* Bleu électrique saturé */
+    --primary-foreground: oklch(0.99 0 0);
+    --secondary: oklch(0.22 0.05 240);
+    --secondary-foreground: oklch(0.85 0.04 230);
+    --muted: oklch(0.32 0.04 240);
+    --muted-foreground: oklch(0.62 0.05 230);
+    --accent: oklch(0.52 0.25 200);            /* Cyan lumineux */
+    --accent-foreground: oklch(0.99 0 0);
+    --destructive: oklch(0.55 0.22 25);
+    --destructive-foreground: oklch(0.97 0 0);
+    --border: oklch(0.25 0.06 240);
+    --input: oklch(0.22 0.05 240);
+    --ring: oklch(0.48 0.22 225);              /* Bleu primaire */
+    --radius: 0.625rem;
+
+    /* Shadow système pour dark mode */
+    --shadow-xs: 0 1px 2px oklch(0 0 0 / 0.05);
+    --shadow-sm: 0 1px 3px oklch(0 0 0 / 0.08), 0 1px 2px oklch(0 0 0 / 0.04);
+    --shadow-md: 0 4px 6px oklch(0 0 0 / 0.10), 0 2px 4px oklch(0 0 0 / 0.06);
+    --shadow-lg: 0 10px 15px oklch(0 0 0 / 0.12), 0 4px 6px oklch(0 0 0 / 0.05);
+    --shadow-xl: 0 20px 25px oklch(0 0 0 / 0.15), 0 10px 10px oklch(0 0 0 / 0.04);
+    --shadow-2xl: 0 25px 50px oklch(0 0 0 / 0.15);
+  }
+
+  .light {
+    /* Light theme - OPTIMIZED for contrast and aesthetics */
+    --background: oklch(0.99 0.001 240);       /* Blanc pur avec très léger tint bleu */
+    --foreground: oklch(0.12 0.04 240);        /* Bleu navy foncé pour texte primaire */
+    --card: oklch(0.97 0.008 240);             /* Blanc légèrement grisé pour profondeur */
+    --card-foreground: oklch(0.12 0.04 240);   /* Même navy foncé */
+    --popover: oklch(0.98 0.005 240);          /* Blanc très légèrement teinté */
+    --popover-foreground: oklch(0.12 0.04 240); /* Navy foncé */
+    --primary: oklch(0.48 0.22 225);           /* Bleu électrique saturé */
+    --primary-foreground: oklch(0.99 0 0);     /* Blanc pur sur fond primaire */
+    --secondary: oklch(0.45 0.05 240);         /* Gris bleuté doux */
+    --secondary-foreground: oklch(0.99 0 0);   /* Blanc sur fond secondaire */
+    --muted: oklch(0.65 0.04 240);             /* Gris doux pour texte secondaire */
+    --muted-foreground: oklch(0.45 0.05 240);  /* Gris bleuté pour texte muted */
+    --accent: oklch(0.52 0.25 200);            /* Cyan lumineux complémentaire */
+    --accent-foreground: oklch(0.12 0.04 240); /* Navy sur fond accent */
+    --destructive: oklch(0.60 0.25 15);        /* Rouge vif pour actions dangereuses */
+    --destructive-foreground: oklch(0.99 0 0); /* Blanc pur sur destructive */
+    --border: oklch(0.92 0.01 240);            /* Gris très clair avec tint bleu */
+    --input: oklch(0.95 0.01 240);             /* Légèrement plus foncé que bg pour inputs */
+    --ring: oklch(0.48 0.22 225);              /* Bleu primaire pour focus ring */
+
+    /* Shadow système pour light mode */
+    --shadow-xs: 0 1px 2px oklch(0.12 0.04 240 / 0.06);
+    --shadow-sm: 0 1px 3px oklch(0.12 0.04 240 / 0.10), 0 1px 2px oklch(0.12 0.04 240 / 0.04);
+    --shadow-md: 0 4px 6px oklch(0.12 0.04 240 / 0.12), 0 2px 4px oklch(0.12 0.04 240 / 0.08);
+    --shadow-lg: 0 10px 15px oklch(0.12 0.04 240 / 0.15), 0 4px 6px oklch(0.12 0.04 240 / 0.08);
+    --shadow-xl: 0 20px 25px oklch(0.12 0.04 240 / 0.15), 0 10px 10px oklch(0.12 0.04 240 / 0.04);
+    --shadow-2xl: 0 25px 50px oklch(0.12 0.04 240 / 0.15);
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  /* Smooth transitions for theme switching */
+  *:not(.no-theme-transition):not(.no-theme-transition *) {
+    transition: background-color 250ms cubic-bezier(0.4, 0, 0.2, 1),
+                color 250ms cubic-bezier(0.4, 0, 0.2, 1),
+                border-color 250ms cubic-bezier(0.4, 0, 0.2, 1),
+                box-shadow 250ms cubic-bezier(0.4, 0, 0.2, 1),
+                fill 250ms cubic-bezier(0.4, 0, 0.2, 1),
+                stroke 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Support prefers-reduced-motion */
+  @media (prefers-color-scheme: light) {
+    html:not(.dark) {
+      color-scheme: light;
+    }
+  }
+
+  @media (prefers-color-scheme: dark) {
+    html:not(.light) {
+      color-scheme: dark;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+/* --- Utilities & Scrollbar --- */
+@layer utilities {
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--background);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--primary);
+  }
+}
+
+/* --- Carte sismique : popups MapLibre --- */
+.maplibregl-popup.seismic-map-popup .maplibregl-popup-content {
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+  border-radius: 12px;
+}
+
+.maplibregl-popup.seismic-map-popup .maplibregl-popup-tip {
+  border-top-color: rgba(8, 12, 20, 0.95);
+}
+
+.seismic-popup {
+  min-width: 200px;
+  max-width: 260px;
+  padding: 12px 14px;
+  background: linear-gradient(145deg, rgba(12, 18, 28, 0.97), rgba(6, 10, 18, 0.98));
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  color: #e5e7eb;
+  font-family: var(--font-sans), system-ui, sans-serif;
+  font-size: 11px;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
+}
+
+.seismic-popup-mag {
+  font-size: 32px;
+  font-weight: 800;
+  line-height: 1;
+  margin-bottom: 4px;
+  letter-spacing: -0.02em;
+}
+
+.seismic-popup-place {
+  font-size: 12px;
+  font-weight: 600;
+  color: #e2e8f0;
+  margin-bottom: 10px;
+  line-height: 1.35;
+}
+
+.seismic-popup-badge-hist {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #fcd34d;
+  background: rgba(251, 191, 36, 0.15);
+  border: 1px solid rgba(251, 191, 36, 0.35);
+  padding: 4px 8px;
+  border-radius: 6px;
+  margin-bottom: 8px;
+}
+
+.seismic-popup-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 3px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.seismic-popup-row span {
+  color: #6b7280;
+  text-transform: uppercase;
+  font-size: 9px;
+  letter-spacing: 0.04em;
+}
+
+.seismic-popup-row strong {
+  color: #f3f4f6;
+  font-weight: 600;
+  text-align: right;
+}
+
+.seismic-popup-row strong.mono {
+  font-family: ui-monospace, monospace;
+  font-size: 10px;
+}
+
+.seismic-popup-time {
+  margin-top: 8px;
+  font-size: 10px;
+  color: #22d3ee;
+}
+
+.seismic-popup-hint {
+  margin-top: 6px;
+  font-size: 9px;
+  color: #6b7280;
+  text-align: center;
+  font-style: italic;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}

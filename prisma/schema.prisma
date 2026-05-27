@@ -1,0 +1,195 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================
+// User Model
+// ============================================
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String?
+  role      String   @default("user")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  diagnostics DiagnosticReport[]
+  gameScores  GameScore[]
+  simulations Simulation[]
+
+  @@index([email])
+  @@index([role])
+}
+
+model DiagnosticReport {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  structure    String
+  foundation   String
+  condition    String
+  age          String
+  terrain      String
+
+  vulnerabilityScore Float
+  vulnerabilityLevel String
+  recommendations    String[] @default([])
+
+  latitude  Float?
+  longitude Float?
+  district  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([vulnerabilityLevel])
+}
+
+model GameScore {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  playerName           String?
+  finalBudget          Float
+  buildingsConstructed Int
+  resilientBuildings   Int
+  selectedSoil         String
+  gameVersion          String   @default("1.0")
+  difficulty           String   @default("medium")
+  survivialPercentage  Float?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([finalBudget])
+  @@index([createdAt])
+}
+
+model Simulation {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  amplitude  Float
+  frequency  Float
+  duration   Float
+  waveType   String
+
+  maxAcceleration        Float?
+  peakGroundAcceleration Float?
+  notes                  String?
+
+  isPublic   Boolean  @default(false)
+  sharedCode String?  @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([isPublic])
+}
+
+// ============================================
+// Seismic (USGS / EMSC real-time)
+// ============================================
+model SeismicEvent {
+  id String @id @default(cuid())
+
+  usgsId String? @unique
+  emscId String? @unique
+  source String
+
+  latitude  Float @db.Real
+  longitude Float @db.Real
+  depth     Float
+
+  magnitude     Float
+  magnitudeType String?
+  eventType     String  @default("earthquake")
+
+  eventTime    DateTime
+  reportedTime DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  region   String?
+  district String?
+  tsunami  Boolean @default(false)
+  felt     Boolean @default(false)
+  reviewed Boolean @default(false)
+
+  alerts RealTimeAlert[]
+
+  @@index([source])
+  @@index([magnitude])
+  @@index([eventTime])
+  @@index([latitude, longitude])
+  @@index([district])
+}
+
+model RealTimeAlert {
+  id String @id @default(cuid())
+
+  eventId String
+  event   SeismicEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  alertType String
+  severity  String
+  message   String?
+
+  affectedLatitude  Float?
+  affectedLongitude Float?
+  affectedRadius    Float?
+
+  isActive  Boolean  @default(true)
+  dismissed Boolean  @default(false)
+
+  createdAt   DateTime  @default(now())
+  dismissedAt DateTime?
+
+  @@index([eventId])
+  @@index([severity])
+  @@index([isActive])
+  @@index([createdAt])
+}
+
+model DailyStatistics {
+  id   String   @id @default(cuid())
+  date DateTime @unique @db.Date
+
+  earthquakeCount Int    @default(0)
+  avgMagnitude    Float?
+  maxMagnitude    Float?
+  minMagnitude    Float?
+
+  activeUsers          Int @default(0)
+  diagnosticsCompleted Int @default(0)
+  gamesPlayed          Int @default(0)
+  diagnosticsCount     Int @default(0)
+  gameScoresCount      Int @default(0)
+  simulationsCount     Int @default(0)
+  newUsersCount        Int @default(0)
+
+  alertsTriggered Int @default(0)
+  criticalAlerts  Int @default(0)
+
+  avgVulnerabilityScore Float?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([date])
+}
