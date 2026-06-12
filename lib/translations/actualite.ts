@@ -1,7 +1,7 @@
 import type { Lang } from "@/lib/i18n"
 
 export const actualiteStrings: Record<string, Record<Lang, string>> = {
-  "act.title": { fr: "Centre de Surveillance", kr: "Sant Siveyans", en: "Monitoring Center", es: "Centro de Vigilancia" },
+  "act.title": { fr: "Centre de Surveillance", kr: "Sant veyans sismik", en: "Monitoring Center", es: "Centro de Vigilancia" },
   "act.subtitle": {
     fr: "Analyse géospatiale en temps réel de l'activité sismique mondiale.",
     kr: "Analiz jewospasyal an tan reyèl sou aktivite tranblemanntè sou latè.",
@@ -23,6 +23,26 @@ export const actualiteStrings: Record<string, Record<Lang, string>> = {
   "act.eventFeed": { fr: "Flux d'événements", kr: "Fil evènman yo", en: "Event feed", es: "Flujo de eventos" },
   "act.results": { fr: "résultats", kr: "rezilta", en: "results", es: "resultados" },
   "act.noEvents": { fr: "Aucun événement trouvé.", kr: "Pa jwenn okenn evènman.", en: "No events found.", es: "No se encontraron eventos." },
+  "act.emptyFilteredHint": {
+    fr: "Essayez une autre catégorie, baissez la magnitude minimale ou effacez la recherche.",
+    kr: "Eseye yon lòt kategori, diminye magnitid minimòm oswa efase rechèch la.",
+    en: "Try another category, lower the minimum magnitude, or clear your search.",
+    es: "Pruebe otra categoría, baje la magnitud mínima o borre la búsqueda.",
+  },
+  "act.emptyDataHint": {
+    fr: "Les sources USGS et EMSC n'ont pas encore renvoyé d'événements pour cette période.",
+    kr: "Sous USGS ak EMSC poko voye evènman pou peryòd sa a.",
+    en: "USGS and EMSC sources have not returned events for this period yet.",
+    es: "Las fuentes USGS y EMSC aún no han devuelto eventos para este período.",
+  },
+  "act.errorHint": {
+    fr: "Vérifiez votre connexion. Les dernières données en cache restent affichées si disponibles.",
+    kr: "Verifye koneksyon ou. Dènye done nan tampon rete afiche si yo disponib.",
+    en: "Check your connection. Cached data remains visible when available.",
+    es: "Compruebe su conexión. Los datos en caché siguen visibles si están disponibles.",
+  },
+  "act.clearFilters": { fr: "Réinitialiser les filtres", kr: "Reyajiste fil yo", en: "Reset filters", es: "Restablecer filtros" },
+  "act.retry": { fr: "Réessayer", kr: "Eseye ankò", en: "Retry", es: "Reintentar" },
   "act.detailedAnalysis": { fr: "Analyse détaillée", kr: "Analiz detaye", en: "Detailed analysis", es: "Análisis detallado" },
   "act.majorAlert": { fr: "Alerte majeure", kr: "Gwo alèt", en: "Major alert", es: "Alerta mayor" },
   "act.unknownRegion": { fr: "Région inconnue", kr: "Rejyon enkoni", en: "Unknown region", es: "Región desconocida" },
@@ -37,6 +57,6 @@ export const actualiteStrings: Record<string, Record<Lang, string>> = {
   "act.cat.all": { fr: "Séismes récents", kr: "Dènye tranblemanntè", en: "Recent earthquakes", es: "Sismos recientes" },
   "act.cat.critical": { fr: "Alertes critiques", kr: "Alèt kritik", en: "Critical alerts", es: "Alertas críticas" },
   "act.cat.tectonic": { fr: "Activité tectonique", kr: "Aktivite tektonik", en: "Tectonic activity", es: "Actividad tectónica" },
-  "act.cat.tsunami": { fr: "Risque tsunami", kr: "Risk tsunami", en: "Tsunami risk", es: "Riesgo de tsunami" },
+  "act.cat.tsunami": { fr: "Risque tsunami", kr: "Danje tsunami", en: "Tsunami risk", es: "Riesgo de tsunami" },
   "act.cat.history": { fr: "Historique majeur", kr: "Gwo istwa", en: "Major history", es: "Historial mayor" },
 }

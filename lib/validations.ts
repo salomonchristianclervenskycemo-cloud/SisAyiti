@@ -48,5 +48,22 @@ export const simulationSchema = z.object({
   isPublic: z.boolean().optional().default(false),
 })
 
+// --- Signalements communautaires (multirisques) ---
+export const communityReportSchema = z.object({
+  clientId: z.string().optional().nullable(),
+  hazardType: z.string().min(1),
+  description: z.string().max(2000).optional().default(''),
+  severity: z.enum(['low', 'moderate', 'critical']),
+  latitude: z.number().min(-90).max(90).optional().nullable(),
+  longitude: z.number().min(-180).max(180).optional().nullable(),
+})
+
+export const communityReportSyncSchema = z.object({
+  reports: z.array(communityReportSchema.extend({
+    clientId: z.string().min(1),
+    createdAt: z.string().optional(),
+  })),
+})
+
 // --- Alias Exports (pour compatibilité) ---
 export const userRegistrationSchema = signUpSchema

@@ -1,44 +1,8 @@
 import type { FeatureCollection } from 'geojson'
 
-export const HAITI_BOUNDS: [number, number, number, number] = [-74.5, 17.5, -71.5, 20.5]
+export { FAULT_LINES_GEOJSON } from './haiti-fault-geo'
 
-export const FAULT_LINES_GEOJSON: FeatureCollection = {
-  type: 'FeatureCollection',
-  features: [
-    {
-      type: 'Feature',
-      properties: { name: 'Faille Enriquillo-Plantain Garden', id: 'enriquillo' },
-      geometry: {
-        type: 'LineString',
-        coordinates: [
-          [-74.5, 18.0],
-          [-74.0, 18.2],
-          [-73.5, 18.4],
-          [-73.0, 18.5],
-          [-72.5, 18.55],
-          [-72.0, 18.6],
-          [-71.5, 18.7],
-          [-71.0, 18.8],
-        ],
-      },
-    },
-    {
-      type: 'Feature',
-      properties: { name: 'Faille Septentrionale', id: 'septentrionale' },
-      geometry: {
-        type: 'LineString',
-        coordinates: [
-          [-74.0, 19.8],
-          [-73.5, 19.85],
-          [-73.0, 19.9],
-          [-72.5, 19.85],
-          [-72.0, 19.8],
-          [-71.5, 19.75],
-        ],
-      },
-    },
-  ],
-}
+export const HAITI_BOUNDS: [number, number, number, number] = [-74.5, 17.5, -71.5, 20.5]
 
 export const LIQUEFACTION_ZONES_GEOJSON: FeatureCollection = {
   type: 'FeatureCollection',
@@ -102,7 +66,9 @@ export const RISK_ZONES_GEOJSON: FeatureCollection = {
   ],
 }
 
-const GLYPHS = 'https://fonts.openmaptiles.org/{fontstack}/{range}.pbf'
+import { MAPLIBRE_GLYPHS_URL } from './map-glyphs'
+
+const GLYPHS = MAPLIBRE_GLYPHS_URL
 
 export const CARTO_DARK_STYLE = {
   version: 8 as const,
@@ -127,6 +93,32 @@ export const CARTO_DARK_STYLE = {
       type: 'raster' as const,
       source: 'carto',
       paint: { 'raster-brightness-max': 0.95 },
+    },
+  ],
+}
+
+/** Style léger pour mini-cartes (glyphs requis pour cluster-count) */
+export const CARTO_LIGHT_STYLE = {
+  version: 8 as const,
+  glyphs: GLYPHS,
+  sources: {
+    carto: {
+      type: 'raster' as const,
+      tiles: [
+        'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+        'https://b.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+        'https://c.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+      ],
+      tileSize: 256,
+      maxzoom: 19,
+      attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+    },
+  },
+  layers: [
+    {
+      id: 'basemap',
+      type: 'raster' as const,
+      source: 'carto',
     },
   ],
 }

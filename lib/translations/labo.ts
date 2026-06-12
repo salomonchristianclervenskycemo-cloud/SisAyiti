@@ -28,7 +28,7 @@ export const laboStrings: Record<string, Record<Lang, string>> = {
   },
   "labo.soilWarning.saturated": {
     fr: "Sol saturé : risque élevé de liquéfaction et d'amplification extrême.",
-    kr: "Tè satire: gwo risk likifaksyon ak sekou ki ogmante anpil.",
+    kr: "Tè satire: gwo danje likifaksyon ak sekou ki ogmante anpil.",
     en: "Saturated soil: high liquefaction and extreme amplification risk.",
     es: "Suelo saturado: alto riesgo de licuefacción y amplificación extrema.",
   },
@@ -61,7 +61,7 @@ export const laboStrings: Record<string, Record<Lang, string>> = {
   "labo.dangerConfig": { fr: "⚠ CONFIGURATION DANGEREUSE", kr: "⚠ KONFIGIRASYON DANJERE", en: "⚠ DANGEROUS CONFIGURATION", es: "⚠ CONFIGURACIÓN PELIGROSA" },
   "labo.dangerMsg1": {
     fr: "Sol mou + construction faible = risque d'effondrement très élevé.",
-    kr: "Tè mou + konstriksyon fèb = gwo risk bilding tonbe.",
+    kr: "Tè mou + konstriksyon fèb = gwo danje bilding tonbe.",
     en: "Soft soil + weak construction = very high collapse risk.",
     es: "Suelo blando + construcción débil = riesgo muy alto de colapso.",
   },
@@ -99,7 +99,7 @@ export const laboStrings: Record<string, Record<Lang, string>> = {
   },
   "labo.amp.saturated": {
     fr: "Sol saturé en eau : risque extrême d'amplification et de liquéfaction.",
-    kr: "Tè satire: gwo risk likifaksyon ak ogmantasyon sekou.",
+    kr: "Tè satire: gwo danje likifaksyon ak ogmantasyon sekou.",
     en: "Saturated soil: extreme amplification and liquefaction risk.",
     es: "Suelo saturado: riesgo extremo de amplificación y licuefacción.",
   },
@@ -128,7 +128,7 @@ export const laboStrings: Record<string, Record<Lang, string>> = {
   },
   "labo.dangerHigh": {
     fr: "Configuration à haut risque. Dommages structurels sévères probables.",
-    kr: "Konfigirasyon gwo risk. Gwo domaj estrikti pwobab.",
+    kr: "Konfigirasyon gwo danje. Gwo domaj estrikti pwobab.",
     en: "High-risk configuration. Severe structural damage likely.",
     es: "Configuración de alto riesgo. Probables daños estructurales severos.",
   },

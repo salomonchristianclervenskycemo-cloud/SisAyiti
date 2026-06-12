@@ -18,6 +18,9 @@ export type SeismicEventsResponse = ApiSuccess<{
   events: SeismicEventUI[]
   timestamp: string
   source?: string
+  /** Aligné sur le tableau de surveillance (USGS + EMSC) */
+  mode?: string
+  status_message_key?: string
 }>
 
 export type SeismicStatsResponse = ApiSuccess<{
@@ -30,8 +33,13 @@ export type SeismicStatsResponse = ApiSuccess<{
 }>
 
 export type SeismicStreamPayload = {
-  type: "events" | "heartbeat"
+  type: "events" | "heartbeat" | "connected" | "error" | "closed"
   events?: Array<Parameters<typeof import("@/lib/seismic-types").dbEventToUI>[0] & { eventTime: string }>
+  /** Flux surveillance — événements déjà au format UI */
+  ui_events?: SeismicEventUI[]
+  mode?: string
+  count?: number
+  message?: string
   timestamp?: string
 }
 
@@ -61,8 +69,23 @@ export type LeaderboardResponse = ApiSuccess<{
   timestamp: string
 }>
 
+export type SurveillanceDashboardResponse = ApiSuccess<{
+  mode: string
+  status_message_key: string
+  from_cache: boolean
+  count: number
+  events: import("@/lib/surveillance/types").SurveillanceSeismicEvent[]
+  haiti_events: import("@/lib/surveillance/types").SurveillanceSeismicEvent[]
+  global_events: import("@/lib/surveillance/types").SurveillanceSeismicEvent[]
+  ui_events: SeismicEventUI[]
+  meta: import("@/lib/surveillance/types").SeismicAggregationMeta
+  timestamp: string
+  network_error?: string | null
+}>
+
 export const API_ROUTES = {
   seismicEvents: "/api/seismic/events",
+  seismicSurveillance: "/api/seismic/surveillance",
   seismicHistory: "/api/seismic/history",
   seismicStats: "/api/seismic/stats",
   seismicAlerts: "/api/seismic/alerts",

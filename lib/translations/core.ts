@@ -15,7 +15,7 @@ export const translations = {
   },
   "nav.actualite": {
     fr: "Centre de Surveillance",
-    kr: "Sant Siveyans",
+    kr: "Sant veyans sismik",
     en: "Monitoring Center",
     es: "Centro de Vigilancia",
   },
@@ -51,13 +51,13 @@ export const translations = {
   },
   "nav.multirisques": {
     fr: "Multirisques ruraux",
-    kr: "Plizyè risk nan peyi",
+    kr: "Plizyè danje nan peyi riral",
     en: "Rural multi-hazard",
     es: "Multirriesgo rural",
   },
   "nav.diagnostic": {
     fr: "Diagnostic bâtiment",
-    kr: "Dyagnostik bilding",
+    kr: "Evalyasyon bilding",
     en: "Building assessment",
     es: "Diagnóstico de edificios",
   },
@@ -165,7 +165,7 @@ export const translations = {
   // ═══════════════════════════════════════════════════════════════
   "m0.desc": {
     fr: "Surveillance en temps réel, alertes et analyses géospatiales",
-    kr: "Siveyans an tan reyèl, alèt ak analiz jewospasyal",
+    kr: "Veyans an tan reyèl, alèt ak analiz jewospasyal",
     en: "Real-time monitoring, alerts, and geospatial analysis",
     es: "Vigilancia en tiempo real, alertas y análisis geoespacial",
   },
@@ -207,7 +207,7 @@ export const translations = {
   },
   "m7.desc": {
     fr: "Diagnostic : sable salé, fers lisses, béton artisanal fragile",
-    kr: "Dyagnostik: sab sale, fè lis, beton atizanal ki fèb",
+    kr: "Evalyasyon: sab sale, fè lis, beton atizanal ki fèb",
     en: "Assessment: salty sand, smooth rebar, fragile artisanal concrete",
     es: "Diagnóstico: arena salada, varillas lisas, concreto artesanal frágil",
   },
@@ -385,19 +385,19 @@ export const translations = {
   },
   "comp.chrono.1842": {
     fr: "1842 (Cap-Haïtien) : Grand séisme sur la Faille Septentrionale. Tsunami dévastateur. Leçon : risque côtier majeur.",
-    kr: "1842 (Kap Ayisyen): Gwo tranblemanntè sou Fay Septantriyonal la. Tsunami devasta. Leson: gwo risk sou kòt yo.",
+    kr: "1842 (Kap Ayisyen): Gwo tranblemanntè sou Fay Septantriyonal la. Tsunami devasta. Leson: gwo danje sou kòt yo.",
     en: "1842 (Cap-Haïtien): Major earthquake on the Northern fault. Devastating tsunami. Lesson: major coastal risk.",
     es: "1842 (Cap-Haitiano): Gran sismo en la Falla Septentrional. Tsunami devastador. Lección: riesgo costero mayor.",
   },
   "comp.chrono.2010": {
     fr: "12 janvier 2010 (Mw 7,0) : Faille EPGF (sud). Épicentre : 15 km SW de Port-au-Prince. >230 000 morts. Bâtiments non parasismiques = catastrophe humanitaire. Énorme aléa sismique, vulnérabilité EXTRÊME du bâti.",
-    kr: "12 janvye 2010 (Mw 7,0): Fay EPGF (sid). Episant: 15 km SW Pòtoprens. >230 000 moun mouri. Bilding ki pa reziste tranblemanntè = katastwòf imanitè. Gwo risk sismik, bilding yo TELE fèb.",
+    kr: "12 janvye 2010 (Mw 7,0): Fay EPGF (sid). Episant: 15 km SW Pòtoprens. >230 000 moun mouri. Bilding ki pa reziste tranblemanntè = katastwòf imanitè. Gwo danje sismik, bilding yo te trè fèb.",
     en: "12 January 2010 (Mw 7.0): EPGF fault (south). Epicenter: 15 km SW of Port-au-Prince. >230,000 deaths. Non-seismic buildings = humanitarian catastrophe. High seismic hazard, EXTREME building vulnerability.",
     es: "12 de enero de 2010 (Mw 7,0): Falla EPGF (sur). Epicentro: 15 km SW de Puerto Príncipe. >230 000 muertos. Edificios no antisísmicos = catástrofe humanitaria. Alto peligro sísmico, vulnerabilidad EXTREMA del hábitat.",
   },
   "comp.chrono.2021": {
     fr: "14 août 2021 (Mw 7,2) : PLUS puissant que 2010, mais densité de population différente à l'épicentre → moins de morts. Même faille EPGF. Rappel qu'Haïti reste en zone de grand danger sismique.",
-    kr: "14 out 2021 (Mw 7,2): Pi fò pase 2010, men mwens moun te nan zòn episant lan → mwens moun mouri. Menm fay EPGF. Sa raple nou Ayiti toujou nan yon zòn ki gen gwo risk tranblemanntè.",
+    kr: "14 out 2021 (Mw 7,2): Pi fò pase 2010, men mwens moun te nan zòn episant lan → mwens moun mouri. Menm fay EPGF. Sa raple nou Ayiti toujou nan yon zòn ki gen gwo danje tranblemanntè.",
     en: "14 August 2021 (Mw 7.2): MORE powerful than 2010, but lower population density at the epicenter → fewer deaths. Same EPGF fault. Haiti remains in a zone of high seismic danger.",
     es: "14 de agosto de 2021 (Mw 7,2): MÁS potente que 2010, pero menor densidad poblacional en el epicentro → menos muertes. Misma falla EPGF. Haití sigue en una zona de alto peligro sísmico.",
   },
@@ -495,7 +495,7 @@ export const translations = {
   },
   "prev.kenbeDesc": {
     fr: "Restez accroché(e) jusqu'à ce que les secousses cessent. Les premières ondes P sont peu destructrices (~10 sec) ; ce sont les ondes S et de surface (lentes, ~30-60 sec) qui causent les dommages majeurs.",
-    kr: "Kenbe fèm jiskaske sekou yo fini. Premye vag P yo pa twò destriktif (~10 segonn); se vag S ak vag sou sifas (pi dousman, ~30–60 segonn) ki fè pi gwo domaj.",
+    kr: "Kenbe fèm jiskaske sekou yo fini. Premye vag P yo pa twò destriktif (~10 segond); se vag S ak vag sou sifas (pi dousman, ~30–60 segond) ki fè pi gwo domaj.",
     en: "Hold on until shaking stops. Early P-waves are less destructive (~10 sec); S-waves and surface waves (slower, ~30–60 sec) cause major damage.",
     es: "Agárrate hasta que cese la sacudida. Las ondas P iniciales son poco destructivas (~10 s); las S y superficiales (más lentas, ~30–60 s) causan los mayores daños.",
   },
@@ -547,7 +547,7 @@ export const translations = {
   },
   "ville.feedback.alerte": {
     fr: "⚠ Alerte ! Sable salé + béton liquide = corrosion + rupture probable",
-    kr: "⚠ Atansyon! Sab sale + beton likid = korozyon + gwo risk tonbe",
+    kr: "⚠ Atansyon! Sab sale + beton likid = korozyon + gwo danje tonbe",
     en: "⚠ Warning! Salty sand + wet concrete = corrosion + likely failure",
     es: "⚠ ¡Alerta! Arena salada + concreto líquido = corrosión + probable colapso",
   },
@@ -705,7 +705,7 @@ export const translations = {
   // ═══════════════════════════════════════════════════════════════
   "liquef.title": {
     fr: "Risque de liquéfaction",
-    kr: "Risk likifaksyon",
+    kr: "Danje likifaksyon",
     en: "Liquefaction hazard",
     es: "Riesgo de licuefacción",
   },
@@ -717,19 +717,19 @@ export const translations = {
   },
   "liquef.pap": {
     fr: "Port-au-Prince : Risque TRÈS ÉLEVÉ (plaines alluviales)",
-    kr: "Pòtoprens: risk TRÈ WO (plenn aluvyal)",
+    kr: "Pòtoprens: danje TRÈ WO (plenn aluvyal)",
     en: "Port-au-Prince: VERY HIGH risk (alluvial plains)",
     es: "Puerto Príncipe: riesgo MUY ALTO (llanuras aluviales)",
   },
   "liquef.arcahaie": {
     fr: "Arcahaie : Risque ÉLEVÉ",
-    kr: "Lakayè: risk WO",
+    kr: "Lakayè: danje WO",
     en: "Arcahaie: HIGH risk",
     es: "Arcahaie: riesgo ALTO",
   },
   "liquef.leogane": {
     fr: "Léogâne : Risque ÉLEVÉ",
-    kr: "Legann: risk WO",
+    kr: "Legann: danje WO",
     en: "Léogâne: HIGH risk",
     es: "Léogâne: riesgo ALTO",
   },
@@ -751,7 +751,7 @@ export const translations = {
   },
   "alert.precious": {
     fr: "Ces secondes permettent de se protéger avant les ondes destructrices S et de surface.",
-    kr: "Kèk segonn sa yo ka ede w pwoteje tèt ou anvan vag S ak vag sou sifas ki destriktif yo rive.",
+    kr: "Kèk segond sa yo ka ede w pwoteje tèt ou anvan vag S ak vag sou sifas ki destriktif yo rive.",
     en: "Those seconds allow you to protect yourself before destructive S- and surface waves arrive.",
     es: "Esos segundos permiten protegerse antes de que lleguen las ondas S y superficiales destructivas.",
   },
@@ -773,7 +773,7 @@ export const translations = {
   },
   "about.body": {
     fr: "SisAyiti est une plateforme éducative interactive conçue pour sensibiliser la population haïtienne aux risques sismiques. Elle combine éducation scientifique, simulation et outils pratiques de prévention.",
-    kr: "SisAyiti se yon platfòm entèaktif pou edike pèp ayisyen sou risk tranblemanntè. Li melanje syans, similasyon ak zouti pratik pou prepare moun.",
+    kr: "SisAyiti se yon platfòm entèaktif pou edike pèp ayisyen sou danje tranblemanntè. Li melanje syans, similasyon ak zouti pratik pou prepare moun.",
     en: "SisAyiti is an interactive educational platform designed to raise awareness of seismic risks among Haitians. It combines scientific education, simulation, and practical preparedness tools.",
     es: "SisAyiti es una plataforma educativa interactiva diseñada para sensibilizar a la población haitiana sobre los riesgos sísmicos. Combina educación científica, simulación y herramientas prácticas de prevención.",
   },

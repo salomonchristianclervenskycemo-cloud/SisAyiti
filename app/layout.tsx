@@ -21,6 +21,12 @@ export async function generateMetadata(): Promise<Metadata> {
     title: meta.title,
     description: meta.description,
     keywords: meta.keywords,
+    manifest: "/manifest.webmanifest",
+    appleWebApp: {
+      capable: true,
+      title: "SisAyiti",
+      statusBarStyle: "default",
+    },
     alternates: {
       languages: {
         fr: "/",

@@ -13,7 +13,7 @@ export const siteMetadataByLang: Record<
   kr: {
     title: "SisAyiti — Konprann · Simile · Prepare",
     description:
-      "Platfòm syantifik entèaktif pou konprann tranblemanntè nan Ayiti, simile enpak yo epi prepare pou risk sismik yo.",
+      "Platfòm syantifik entèaktif pou konprann tranblemanntè nan Ayiti, simile enpak yo epi prepare pou danje sismik yo.",
     keywords: ["tranblemanntè", "Ayiti", "prevansyon", "similasyon", "edikasyon sismik"],
   },
   en: {

@@ -8,7 +8,7 @@
 
 A comprehensive web platform designed to educate Haitian citizens about seismic risk, assess building vulnerability, and promote disaster resilience through interactive games and simulations.
 
-**Status**: ✨ **67% Complete - Production Ready (Phases 2-4)**
+**Status**: ✨ **70% Complete - MVP jury-ready (Phases 2-4 + P1/P2)**
 
 ---
 
@@ -59,6 +59,8 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 | [PHASE_2_SETUP.md](PHASE_2_SETUP.md) | Database setup |
 | [PHASE_3_API_ROUTES.md](PHASE_3_API_ROUTES.md) | API reference |
 | [PHASE_4_INFRASTRUCTURE.md](PHASE_4_INFRASTRUCTURE.md) | Deployment guide |
+| [DEMO.md](DEMO.md) | Jury demo walkthrough (~10 min) |
+| [DEPLOY.md](DEPLOY.md) | Vercel + environment checklist |
 
 ---
 
@@ -96,7 +98,9 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 | 5 | Testing | 📋 | Planned |
 | 6 | Deployment | 📋 | Planned |
 
-**Progress**: 67% (4/6 phases complete)
+**Progress**: 70% (4/6 phases + P1/P2 jury items)
+
+**Recent (P1/P2)**: API signalements communautaires, E2E parcours clés, `DEMO.md` / `DEPLOY.md`, PWA manifest, certificat Comprendre, export diagnostic, classement Ville.
 
 ---
 

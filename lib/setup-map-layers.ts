@@ -15,6 +15,10 @@ import { resolvePlaceLabel } from './haiti-region-resolver'
 import type { MapHoverEvent } from './map-hover-types'
 import { normalizeDepthKm } from './seismic-geo'
 import type { SeismicEventUI } from './seismic-types'
+import { capEventsForMap } from './map-event-cap'
+import { MAP_FONT_BOLD } from './map-glyphs'
+import { runWhenMapReady } from './map-ready'
+import { FAULT_LAYER_IDS, FAULT_LINES_GEOJSON, FAULT_PALETTE } from './haiti-fault-geo'
 
 /* ------------------------------------------------------------------ */
 /*  GeoJSON                                                             */
@@ -43,10 +47,14 @@ export function eventsToGeoJSON(events: SeismicEventUI[]): FeatureCollection {
           region: e.region ?? '',
           placeLabel: (() => {
             try {
-              return resolvePlaceLabel(e.latitude, e.longitude, e.region)
+              const label = resolvePlaceLabel(e.latitude, e.longitude, e.region)
+              const trimmed = typeof label === 'string' ? label.trim() : ''
+              if (trimmed.length > 0) return trimmed
             } catch {
-              return e.region ?? ''
+              /* fallback below */
             }
+            const region = (e.region ?? '').trim()
+            return region.length > 0 ? region : 'Ayiti'
           })(),
           source: e.source ?? 'USGS',
           eventTime: e.eventTime ?? new Date().toISOString(),
@@ -86,14 +94,23 @@ function addLayerIfMissing(map: maplibregl.Map, layer: maplibregl.AddLayerObject
   }
 }
 
+/** Recrée les couches texte pour appliquer un layout corrigé (évite état HMR obsolète). */
+function replaceSymbolLayer(map: maplibregl.Map, layer: maplibregl.AddLayerObject) {
+  try {
+    if (map.getLayer(layer.id)) map.removeLayer(layer.id)
+  } catch {
+    /* ok */
+  }
+  addLayerIfMissing(map, layer)
+}
+
 function removeLayersAndSources(map: maplibregl.Map) {
   const layerIds = [
     'earthquake-place-labels', 'earthquake-mag-labels', 'earthquakes-core',
     'earthquakes-ring', 'earthquakes-halo', 'earthquake-pulse',
     'cluster-count', 'clusters', 'earthquake-heat',
     'liquefaction-labels', 'liquefaction-circles',
-    'fault-enriquillo', 'fault-enriquillo-glow',
-    'fault-septentrionale', 'fault-septentrionale-glow',
+    ...FAULT_LAYER_IDS,
     'risk-zones-outline', 'risk-zones-fill',
   ]
   for (const id of layerIds) {
@@ -127,7 +144,7 @@ export function updateEarthquakeData(map: maplibregl.Map, events: SeismicEventUI
   const src = map.getSource('earthquakes') as maplibregl.GeoJSONSource | undefined
   if (!src) return
   try {
-    src.setData(eventsToGeoJSON(events))
+    src.setData(eventsToGeoJSON(capEventsForMap(events)))
   } catch { /* ignore */ }
 }
 
@@ -146,8 +163,8 @@ export function startPulseAnimation(map: maplibregl.Map): () => void {
       const scale = 1 + 0.3 * Math.sin(pulsePhase)
       const expr = [
         'interpolate', ['linear'], ['zoom'],
-        1, ['*', ['get', 'magnitude'], 1.5 * scale],
-        8, ['*', ['get', 'magnitude'], 5 * scale]
+        1, ['*', ['coalesce', ['get', 'magnitude'], 2], 1.5 * scale],
+        8, ['*', ['coalesce', ['get', 'magnitude'], 2], 5 * scale]
       ] as maplibregl.ExpressionSpecification
       map.setPaintProperty('earthquake-pulse', 'circle-radius', expr)
     } catch {
@@ -381,20 +398,7 @@ function ensureEarthquakeLayers(map: maplibregl.Map, events: SeismicEventUI[]) {
     },
   })
 
-  addLayerIfMissing(map, {
-    id: 'cluster-count',
-    type: 'symbol',
-    source: 'earthquakes',
-    filter: ['has', 'point_count'],
-    layout: {
-      'text-field': '{point_count_abbreviated}',
-      'text-size': 13,
-      'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
-    },
-    paint: {
-      'text-color': '#ffffff',
-    },
-  })
+  // Pas de couche texte sur clusters (évite crash glyphes MapLibre sur chaînes vides)
 
   // Pulse d'animation (M >= 0 pour tout animer comme sur LiveWorldMap)
   addLayerIfMissing(map, {
@@ -405,8 +409,8 @@ function ensureEarthquakeLayers(map: maplibregl.Map, events: SeismicEventUI[]) {
     paint: {
       'circle-radius': [
         'interpolate', ['linear'], ['zoom'],
-        1, ['*', ['get', 'magnitude'], 1.5],
-        8, ['*', ['get', 'magnitude'], 5]
+        1, ['*', ['coalesce', ['get', 'magnitude'], 2], 1.5],
+        8, ['*', ['coalesce', ['get', 'magnitude'], 2], 5]
       ],
       'circle-color': [
         'match',
@@ -459,32 +463,207 @@ function ensureEarthquakeLayers(map: maplibregl.Map, events: SeismicEventUI[]) {
     paint: earthquakeCorePaint,
   })
 
-  // Label magnitude
-  addLayerIfMissing(map, {
-    id: 'earthquake-mag-labels',
-    type: 'symbol',
-    source: 'earthquakes',
-    minzoom: 5,
-    filter: ['all', ['!', ['has', 'point_count']], ['>=', ['coalesce', ['get', 'magnitude'], 0], 3.5]],
-    layout: earthquakeMagLabelLayout,
-    paint: earthquakeMagLabelPaint,
-  })
+  // Labels texte : après chargement des glyphes (évite _numberToString.length 0)
+  runWhenMapReady(map, () => {
+    replaceSymbolLayer(map, {
+      id: 'earthquake-mag-labels',
+      type: 'symbol',
+      source: 'earthquakes',
+      minzoom: 5,
+      filter: ['all', ['!', ['has', 'point_count']], ['>=', ['coalesce', ['get', 'magnitude'], 0], 3.5]],
+      layout: earthquakeMagLabelLayout,
+      paint: earthquakeMagLabelPaint,
+    })
 
-  // Label lieu
-  addLayerIfMissing(map, {
-    id: 'earthquake-place-labels',
-    type: 'symbol',
-    source: 'earthquakes',
-    minzoom: 7,
-    filter: ['all', ['!', ['has', 'point_count']], ['>=', ['coalesce', ['get', 'magnitude'], 0], 4.5]],
-    layout: earthquakePlaceLabelLayout,
-    paint: earthquakePlaceLabelPaint,
+    replaceSymbolLayer(map, {
+      id: 'earthquake-place-labels',
+      type: 'symbol',
+      source: 'earthquakes',
+      minzoom: 7,
+      filter: [
+        'all',
+        ['!', ['has', 'point_count']],
+        ['>=', ['coalesce', ['get', 'magnitude'], 0], 4.5],
+        ['>', ['length', ['coalesce', ['to-string', ['get', 'placeLabel']], '']], 0],
+      ],
+      layout: earthquakePlaceLabelLayout,
+      paint: earthquakePlaceLabelPaint,
+    })
   })
 }
 
 /* ------------------------------------------------------------------ */
 /*  Couches statiques (failles, liquéfaction, zones de risque)        */
 /* ------------------------------------------------------------------ */
+
+function removeFaultLayers(map: maplibregl.Map) {
+  for (const id of FAULT_LAYER_IDS) {
+    try {
+      if (map.getLayer(id)) map.removeLayer(id)
+    } catch {
+      /* ok */
+    }
+  }
+}
+
+function upsertFaultSource(map: maplibregl.Map) {
+  const spec = {
+    type: 'geojson' as const,
+    data: FAULT_LINES_GEOJSON,
+    lineMetrics: true,
+  }
+  const existing = map.getSource('fault-lines') as maplibregl.GeoJSONSource | undefined
+  if (existing?.setData) {
+    existing.setData(FAULT_LINES_GEOJSON)
+  } else {
+    try {
+      if (map.getSource('fault-lines')) map.removeSource('fault-lines')
+    } catch {
+      /* ok */
+    }
+    addSourceIfMissing(map, 'fault-lines', spec)
+  }
+}
+
+function addFaultLayers(map: maplibregl.Map) {
+  const { epgf, sept } = FAULT_PALETTE
+
+  const addSept = (suffix: string, paint: maplibregl.LineLayerSpecification['paint'], layout?: maplibregl.LineLayerSpecification['layout']) => {
+    addLayerIfMissing(map, {
+      id: `fault-septentrionale-${suffix}`,
+      type: 'line',
+      source: 'fault-lines',
+      filter: ['==', ['get', 'id'], 'septentrionale'],
+      paint,
+      layout,
+    })
+  }
+
+  const addEnriq = (suffix: string, paint: maplibregl.LineLayerSpecification['paint'], layout?: maplibregl.LineLayerSpecification['layout']) => {
+    addLayerIfMissing(map, {
+      id: `fault-enriquillo-${suffix}`,
+      type: 'line',
+      source: 'fault-lines',
+      filter: ['==', ['get', 'id'], 'enriquillo'],
+      paint,
+      layout,
+    })
+  }
+
+  // Septentrionale — bleu, trait discontinu
+  addSept('corridor', {
+    'line-color': sept.glow,
+    'line-width': ['interpolate', ['linear'], ['zoom'], 6, 14, 10, 22, 14, 28],
+    'line-opacity': 0.14,
+    'line-blur': 8,
+  })
+  addSept('glow', {
+    'line-color': sept.glow,
+    'line-width': ['interpolate', ['linear'], ['zoom'], 6, 8, 10, 12, 14, 16],
+    'line-opacity': 0.28,
+    'line-blur': 4,
+  })
+  addSept('glow-mid', {
+    'line-color': sept.core,
+    'line-width': ['interpolate', ['linear'], ['zoom'], 6, 4, 10, 6, 14, 8],
+    'line-opacity': 0.45,
+    'line-blur': 1.5,
+  })
+  addSept('core', {
+    'line-color': sept.core,
+    'line-width': ['interpolate', ['linear'], ['zoom'], 6, 2, 10, 2.8, 14, 3.5],
+    'line-opacity': 0.95,
+    'line-dasharray': [2, 1.5, 6, 1.5],
+  })
+  addSept('highlight', {
+    'line-color': '#ffffff',
+    'line-width': ['interpolate', ['linear'], ['zoom'], 6, 0.6, 10, 0.9, 14, 1.1],
+    'line-opacity': 0.42,
+  })
+
+  // Enriquillo-Plantain Garden — rouge, trait continu lumineux
+  addEnriq('corridor', {
+    'line-color': epgf.glow,
+    'line-width': ['interpolate', ['linear'], ['zoom'], 6, 16, 10, 24, 14, 32],
+    'line-opacity': 0.16,
+    'line-blur': 10,
+  })
+  addEnriq('glow', {
+    'line-color': epgf.glow,
+    'line-width': ['interpolate', ['linear'], ['zoom'], 6, 10, 10, 14, 14, 18],
+    'line-opacity': 0.32,
+    'line-blur': 5,
+  })
+  addEnriq('glow-mid', {
+    'line-color': epgf.core,
+    'line-width': ['interpolate', ['linear'], ['zoom'], 6, 5, 10, 7, 14, 9],
+    'line-opacity': 0.5,
+    'line-blur': 2,
+  })
+  addEnriq('core', {
+    'line-gradient': [
+      'interpolate',
+      ['linear'],
+      ['line-progress'],
+      0,
+      '#fb923c',
+      0.35,
+      epgf.core,
+      0.7,
+      epgf.glow,
+      1,
+      '#dc2626',
+    ],
+    'line-width': ['interpolate', ['linear'], ['zoom'], 6, 2.2, 10, 3.2, 14, 4],
+    'line-opacity': 1,
+  })
+  addEnriq('highlight', {
+    'line-color': '#ffffff',
+    'line-width': ['interpolate', ['linear'], ['zoom'], 6, 0.7, 10, 1, 14, 1.2],
+    'line-opacity': 0.5,
+  })
+
+  // Labels
+  const labelLayout: maplibregl.SymbolLayerSpecification['layout'] = {
+    'symbol-placement': 'line-center',
+    'text-field': ['get', 'shortName'],
+    'text-font': [...MAP_FONT_BOLD],
+    'text-size': ['interpolate', ['linear'], ['zoom'], 7, 10, 11, 13, 14, 15],
+    'text-letter-spacing': 0.08,
+    'text-rotation-alignment': 'map',
+    'text-pitch-alignment': 'viewport',
+  }
+
+  addLayerIfMissing(map, {
+    id: 'fault-septentrionale-label',
+    type: 'symbol',
+    source: 'fault-lines',
+    minzoom: 7,
+    filter: ['==', ['get', 'id'], 'septentrionale'],
+    layout: labelLayout,
+    paint: {
+      'text-color': sept.label,
+      'text-halo-color': 'rgba(15,23,42,0.92)',
+      'text-halo-width': 2,
+      'text-halo-blur': 0.5,
+    },
+  })
+
+  addLayerIfMissing(map, {
+    id: 'fault-enriquillo-label',
+    type: 'symbol',
+    source: 'fault-lines',
+    minzoom: 7,
+    filter: ['==', ['get', 'id'], 'enriquillo'],
+    layout: labelLayout,
+    paint: {
+      'text-color': epgf.label,
+      'text-halo-color': 'rgba(15,23,42,0.92)',
+      'text-halo-width': 2,
+      'text-halo-blur': 0.5,
+    },
+  })
+}
 
 async function ensureStaticLayers(map: maplibregl.Map, gen: number): Promise<void> {
   try {
@@ -494,7 +673,10 @@ async function ensureStaticLayers(map: maplibregl.Map, gen: number): Promise<voi
     if (gen !== setupGeneration) return
     if (!data?.layers) return
 
-    addSourceIfMissing(map, 'fault-lines', { type: 'geojson', data: data.layers.faults })
+    removeFaultLayers(map)
+    upsertFaultSource(map)
+    addFaultLayers(map)
+
     addSourceIfMissing(map, 'liquefaction', { type: 'geojson', data: data.layers.liquefaction })
     addSourceIfMissing(map, 'risk-zones', { type: 'geojson', data: data.layers.riskZones })
 
@@ -522,38 +704,6 @@ async function ensureStaticLayers(map: maplibregl.Map, gen: number): Promise<voi
       layout: { visibility: 'none' },
     })
 
-    // Faille Septentrionale
-    addLayerIfMissing(map, {
-      id: 'fault-septentrionale-glow',
-      type: 'line',
-      source: 'fault-lines',
-      filter: ['==', ['get', 'id'], 'septentrionale'],
-      paint: { 'line-color': '#ff9500', 'line-width': 8, 'line-opacity': 0.22, 'line-blur': 3 },
-    })
-    addLayerIfMissing(map, {
-      id: 'fault-septentrionale',
-      type: 'line',
-      source: 'fault-lines',
-      filter: ['==', ['get', 'id'], 'septentrionale'],
-      paint: { 'line-color': '#ff9500', 'line-width': 2.5, 'line-dasharray': [5, 3], 'line-opacity': 0.95 },
-    })
-
-    // Faille Enriquillo
-    addLayerIfMissing(map, {
-      id: 'fault-enriquillo-glow',
-      type: 'line',
-      source: 'fault-lines',
-      filter: ['==', ['get', 'id'], 'enriquillo'],
-      paint: { 'line-color': '#ff3333', 'line-width': 10, 'line-opacity': 0.28, 'line-blur': 3 },
-    })
-    addLayerIfMissing(map, {
-      id: 'fault-enriquillo',
-      type: 'line',
-      source: 'fault-lines',
-      filter: ['==', ['get', 'id'], 'enriquillo'],
-      paint: { 'line-color': '#ff4444', 'line-width': 3, 'line-opacity': 1 },
-    })
-
     // Liquéfaction
     addLayerIfMissing(map, {
       id: 'liquefaction-circles',
@@ -568,24 +718,27 @@ async function ensureStaticLayers(map: maplibregl.Map, gen: number): Promise<voi
         'circle-blur': 0.4,
       },
     })
-    addLayerIfMissing(map, {
-      id: 'liquefaction-labels',
-      type: 'symbol',
-      source: 'liquefaction',
-      minzoom: 8,
-      layout: {
-        'text-field': ['get', 'name'],
-        'text-size': 11,
-        'text-font': ['Open Sans Regular', 'Arial Unicode MS Regular'],
-        'text-offset': [0, 1.6],
-        'text-anchor': 'top',
-        'text-optional': true,
-      },
-      paint: {
-        'text-color': 'rgba(255,200,200,0.95)',
-        'text-halo-color': 'rgba(0,0,0,0.85)',
-        'text-halo-width': 1.5,
-      },
+    runWhenMapReady(map, () => {
+      replaceSymbolLayer(map, {
+        id: 'liquefaction-labels',
+        type: 'symbol',
+        source: 'liquefaction',
+        minzoom: 8,
+        filter: ['all', ['has', 'name'], ['>', ['length', ['coalesce', ['to-string', ['get', 'name']], '']], 0]],
+        layout: {
+          'text-field': ['coalesce', ['get', 'name'], 'Ayiti'],
+          'text-size': 11,
+          'text-font': [...MAP_FONT_BOLD],
+          'text-offset': [0, 1.6],
+          'text-anchor': 'top',
+          'text-optional': true,
+        },
+        paint: {
+          'text-color': 'rgba(255,200,200,0.95)',
+          'text-halo-color': 'rgba(0,0,0,0.85)',
+          'text-halo-width': 1.5,
+        },
+      })
     })
   } catch (err) {
     console.warn('[map] Static layers unavailable:', err)
@@ -655,11 +808,10 @@ export function applyLayerVisibility(
   vis('earthquake-mag-labels', eq)
   vis('earthquake-place-labels', eq)
   vis('clusters', eq && cl)
-  vis('cluster-count', eq && cl)
-  vis('fault-septentrionale-glow', layers.faults ?? true)
-  vis('fault-septentrionale', layers.faults ?? true)
-  vis('fault-enriquillo-glow', layers.faults ?? true)
-  vis('fault-enriquillo', layers.faults ?? true)
+  const faultsOn = layers.faults ?? true
+  for (const id of FAULT_LAYER_IDS) {
+    vis(id, faultsOn)
+  }
   vis('liquefaction-circles', layers.liquefaction ?? true)
   vis('liquefaction-labels', layers.liquefaction ?? true)
   vis('risk-zones-fill', layers.riskZones ?? false)

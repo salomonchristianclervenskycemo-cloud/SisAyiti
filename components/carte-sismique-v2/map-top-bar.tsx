@@ -3,6 +3,7 @@
 import { format } from 'date-fns'
 import { fr, enUS, es } from 'date-fns/locale'
 import { useSeismicStore } from '@/lib/seismic-store'
+import { useMapFilteredEvents } from '@/hooks/use-map-filters'
 import { Loader2 } from 'lucide-react'
 import type { Lang } from '@/lib/i18n'
 import { mapTopBarT, toMapLocale } from '@/lib/translations/map'
@@ -20,7 +21,7 @@ export function MapTopBar({ lang }: { lang: Lang }) {
   const liveConnected = useSeismicStore((s) => s.liveConnected)
   const liveEnabled = useSeismicStore((s) => s.liveEnabled)
   const lastSync = useSeismicStore((s) => s.lastSync)
-  const eventCount = useSeismicStore((s) => s.events.length)
+  const eventCount = useMapFilteredEvents().length
   const dataSource = useSeismicStore((s) => s.dataSource)
 
   const isActive = liveEnabled && liveConnected

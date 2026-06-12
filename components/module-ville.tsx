@@ -1,124 +1,68 @@
 "use client"
+
 import { useEffect, useRef } from "react"
-import { useLang } from "@/lib/lang-context"
-import { l, pickLabel, pickDesc } from "@/lib/i18n"
-import { villeLabels, villeTeclaTips } from "@/lib/translations/ville"
+import { Coins, Building2, Wrench, AlertTriangle, ShieldCheck } from "lucide-react"
+import { motion } from "framer-motion"
 import { cn } from "@/lib/utils"
+import { useLang } from "@/lib/lang-context"
+import { useApp } from "@/lib/app-context"
 import { useVilleGame } from "@/hooks/use-ville-game"
 import { useSubmitScore } from "@/hooks/use-submit-score"
-import { cellCost, calcResistance, type VilleCell, type SoilType, type BuildingType, type ConstructType, type GameStep } from "@/shared/ville-game"
-import { School, Home, Plus, ShoppingBag, Zap, AlertTriangle, CheckCircle, RotateCcw, Stethoscope, ChevronRight, Info, Shield, Activity } from "lucide-react"
-import { motion, AnimatePresence } from "framer-motion"
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
+import { recordVillePhaseReached, recordVilleCampaignComplete } from "@/lib/offline-education"
+import { VillePathProgress } from "@/components/ville-game/ville-path-progress"
+import { VilleScienceNav } from "@/components/ville-game/ville-science-nav"
+import { VilleCampaignIntro } from "@/components/ville-game/ville-campaign-intro"
+import { VilleQuizPanel } from "@/components/ville-game/ville-quiz-panel"
+import { VilleGameGrid } from "@/components/ville-game/ville-game-grid"
+import { StepControlPanel, StepStepper } from "@/components/ville-game/step-control-panel"
+import { ResultsDialog } from "@/components/ville-game/results-dialog"
+import { VilleLeaderboard } from "@/components/ville-game/ville-leaderboard"
+import { Civ1Panel } from "@/components/ville-game/civ1-panel"
+import { villeAdvisor } from "@/components/ville-game/civ1-theme"
+import { damagesFromGrid, HAITI_EARTHQUAKE_PHASES } from "@/shared/ville-game"
 
-// --- Composants Utilitaires ---
-const GlassCard = ({ children, className, glowColor }: { children: React.ReactNode, className?: string, glowColor?: string }) => (
-  <div className={cn(
-    "relative overflow-hidden rounded-2xl border border-border/40 bg-card/60 backdrop-blur-xl",
-    "shadow-sm dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] transition-all duration-500",
-    className
-  )}>
-    {glowColor && (
-      <div 
-        className="absolute -top-24 -right-24 w-48 h-48 rounded-full blur-[80px] opacity-30 dark:opacity-20 pointer-events-none transition-colors duration-700"
-        style={{ backgroundColor: glowColor }}
-      />
-    )}
-    {children}
-  </div>
-)
-
-/* ── Types ───────────────────────────────────────────────────── */
-interface Cell extends VilleCell {}
-
-const STEP_KEYS = ["ville.step.soil", "ville.step.zone", "ville.step.materials", "ville.step.simulation"] as const
-
-const soilDef: Record<Exclude<SoilType, null>, { color: string; cost: number; risk: number }> = {
-  rock:     { color: "bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400",  cost: 0,     risk: 1.0 },
-  alluvial: { color: "bg-yellow-500/10 border-yellow-500/30 text-yellow-600 dark:text-yellow-400",     cost: 0,     risk: 2.0 },
-  coastal:  { color: "bg-red-500/10 border-red-500/30 text-red-600 dark:text-red-400",              cost: 0,     risk: 3.5 },
-}
-
-const buildingDef: Record<Exclude<BuildingType, null>, { icon: typeof School; costBase: number }> = {
-  school:   { icon: School,       costBase: 80000  },
-  house:    { icon: Home,         costBase: 25000  },
-  hospital: { icon: Plus,         costBase: 150000 },
-  market:   { icon: ShoppingBag,  costBase: 40000  },
-}
-
-const constructDef: Record<Exclude<ConstructType, null>, { multiplier: number; resistance: number; color: string }> = {
-  parasismique: { multiplier: 2.5,  resistance: 0.9, color: "text-green-600 dark:text-green-400" },
-  ciment:       { multiplier: 1.0,  resistance: 0.3, color: "text-red-600 dark:text-red-400" },
-  bois:         { multiplier: 1.4,  resistance: 0.6, color: "text-yellow-600 dark:text-yellow-400" },
-  adobe:        { multiplier: 0.8,  resistance: 0.2, color: "text-orange-600 dark:text-orange-400" },
-}
-
-/* ── Cell display ────────────────────────────────────────────── */
-function CellDisplay({ cell, onClick, selected, shakeResult }: {
-  cell: Cell
-  onClick: (e: React.MouseEvent) => void
-  selected: boolean
-  shakeResult: "good" | "damaged" | "collapsed" | null
-}) {
-  const { t } = useLang()
-  const soil = cell.soil ? soilDef[cell.soil] : null
-  const building = cell.building ? buildingDef[cell.building] : null
-  const Icon = building?.icon
-
-  const resultColor = shakeResult === "good" ? "border-green-500/50 bg-green-500/10 text-green-700 dark:text-green-400 shadow-[0_0_15px_rgba(34,197,94,0.2)]"
-    : shakeResult === "damaged" ? "border-orange-500/50 bg-orange-500/10 text-orange-700 dark:text-orange-400 shadow-[0_0_15px_rgba(249,115,22,0.2)]"
-    : shakeResult === "collapsed" ? "border-red-600/50 bg-red-600/20 text-red-700 dark:text-red-400 shadow-[0_0_15px_rgba(220,38,38,0.3)]"
-    : ""
-
-  return (
-    <button
-      onClick={(e) => onClick(e)}
-      className={cn(
-        "relative aspect-square rounded-xl border-2 flex flex-col items-center justify-center gap-1 transition-all duration-300 text-xs font-bold overflow-hidden",
-        soil ? soil.color : "bg-secondary/30 border-border/50 hover:bg-secondary/50",
-        selected && !shakeResult && "border-primary bg-primary/10 shadow-[0_0_20px_rgba(59,130,246,0.2)] scale-[0.98]",
-        shakeResult && resultColor
-      )}
-      aria-label={`${t("ville.cellAria")}: ${cell.soil ?? ""} ${cell.building ?? ""}`}
-    >
-      {/* Background pattern for soil */}
-      {soil && !shakeResult && (
-        <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(currentColor 2px, transparent 2px)', backgroundSize: '8px 8px' }} />
-      )}
-      
-      {Icon && <Icon size={20} className={cn("shrink-0 relative z-10", shakeResult === "collapsed" && "opacity-50 rotate-12")} />}
-      {cell.building && (
-        <span className="text-[10px] leading-tight text-center px-1 truncate w-full relative z-10">
-          {cell.building.slice(0,5)}
-        </span>
-      )}
-      {shakeResult === "collapsed" && (
-        <div className="absolute inset-0 flex items-center justify-center bg-red-500/10 backdrop-blur-[1px]">
-          <span className="text-2xl text-red-500 font-black drop-shadow-md rotate-[-15deg]">X</span>
-        </div>
-      )}
-      {!cell.soil && !cell.building && <span className="text-muted-foreground/50 text-xl font-light">+</span>}
-    </button>
-  )
-}
-
-/* ── Main Module ─────────────────────────────────────────────── */
 export default function ModuleVille() {
   const { lang, t } = useLang()
+  const { setActiveModule } = useApp()
   const gridRef = useRef<HTMLDivElement>(null)
+  const campaignRecordedRef = useRef(false)
   const scoreSubmittedRef = useRef(false)
   const { submitScore } = useSubmitScore()
+  const game = useVilleGame()
+
   const {
-    step, setStep, selectedCell, selectedCells, grid, shakeResults, shaking, showResults, setShowResults,
-    budget, budgetPct, totalBuildings, resistantCount, selectedCellData,
-    handleCellClick, setSoil, placeBuilding, setConstruct, runEarthquake, reset, moveSelection,
-    calculateBudgetAfterAction, GRID_SIZE, BUDGET_START,
-  } = useVilleGame()
+    step,
+    setStep,
+    role,
+    setRole,
+    selectedCell,
+    selectedCells,
+    grid,
+    shaking,
+    showResults,
+    setShowResults,
+    resultsMode,
+    simulationReport,
+    damageStats,
+    hasDamage,
+    phaseStarted,
+    advisorKey,
+    stepAdvisorKey,
+    budget,
+    budgetPct,
+    totalBudget,
+    totalBuildings,
+    handleCellClick,
+    reset,
+    moveSelection,
+    continueAfterPhase,
+    phaseIndex,
+    phaseReports,
+    GRID_SIZE,
+  } = game
+
+  const shakeResults = damagesFromGrid(grid)
+  const advisorText = t(advisorKey) !== advisorKey ? t(advisorKey) : t(stepAdvisorKey)
 
   useEffect(() => {
     const el = gridRef.current
@@ -137,326 +81,187 @@ export default function ModuleVille() {
   }, [moveSelection])
 
   useEffect(() => {
-    if (!showResults || scoreSubmittedRef.current) return
+    if (!showResults || resultsMode !== "final" || !simulationReport || scoreSubmittedRef.current) return
     scoreSubmittedRef.current = true
-    const dominantSoil = grid.find((c) => c.soil)?.soil ?? "rock"
+    const dominantSoil = grid.find((c) => c.terrain)?.terrain ?? "rock"
     submitScore({
       finalBudget: budget,
       buildingsConstructed: totalBuildings,
-      resilientBuildings: resistantCount,
+      resilientBuildings: simulationReport.intactCount,
       selectedSoil: dominantSoil,
-      difficulty: "medium",
+      difficulty: "Haiti-Campaign",
       lang,
     }).catch(() => {
       scoreSubmittedRef.current = false
     })
-  }, [showResults, budget, totalBuildings, resistantCount, grid, lang, submitScore])
+  }, [showResults, resultsMode, simulationReport, budget, totalBuildings, grid, lang, submitScore])
 
   useEffect(() => {
     if (!showResults) scoreSubmittedRef.current = false
   }, [showResults])
 
-  return (
-    <div className="min-h-screen bg-background text-foreground p-4 md:p-6 lg:p-8 relative overflow-hidden font-sans transition-colors duration-300">
-      {/* Background Textures */}
-      <div className="absolute inset-0 z-0 opacity-[0.03] dark:opacity-[0.05] pointer-events-none" 
-           style={{ backgroundImage: 'radial-gradient(currentColor 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
-      <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-blue-500/5 via-background to-red-500/5 dark:from-blue-900/20 dark:to-red-900/10 pointer-events-none z-0" />
+  useEffect(() => {
+    if (phaseReports.length > 0) {
+      recordVillePhaseReached(phaseReports.length)
+    }
+  }, [phaseReports.length])
 
-      <div className="max-w-5xl mx-auto relative z-10 space-y-6">
-        <div className="mb-8">
-          <h2 className="text-3xl md:text-4xl font-black tracking-tight text-foreground">
+  useEffect(() => {
+    if (showResults && resultsMode === "final" && !campaignRecordedRef.current) {
+      campaignRecordedRef.current = true
+      recordVilleCampaignComplete()
+    }
+    if (!showResults) campaignRecordedRef.current = false
+  }, [showResults, resultsMode])
+
+  return (
+    <div className="min-h-full p-4 md:p-6 lg:p-8 relative overflow-hidden">
+      <div
+        className="absolute inset-0 z-0 opacity-[0.03] dark:opacity-[0.05] pointer-events-none"
+        style={{
+          backgroundImage: "radial-gradient(currentColor 1px, transparent 1px)",
+          backgroundSize: "40px 40px",
+        }}
+      />
+      <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-primary/5 via-background to-teal-500/5 pointer-events-none z-0" />
+
+      <div className="max-w-6xl mx-auto relative z-10 space-y-4">
+        <motion.header
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-2"
+        >
+          <h2 className="text-2xl md:text-3xl font-black tracking-tight bg-gradient-to-r from-primary to-teal-500 bg-clip-text text-transparent">
             {t("ville.title")}
           </h2>
-          <p className="text-sm text-muted-foreground mt-2 max-w-2xl">
-            {t("ville.titleDetail")}
-          </p>
-        </div>
+          <p className="text-sm text-muted-foreground mt-1 max-w-2xl">{t("ville.subtitleLong")}</p>
+        </motion.header>
 
-        {/* Step indicators */}
-        <div className="flex gap-3 overflow-x-auto pb-4 custom-scrollbar">
-          {([1,2,3,4] as GameStep[]).map(s => (
-            <button key={s} onClick={() => setStep(s)}
-              className={cn("shrink-0 flex items-center gap-3 px-5 py-3 rounded-xl text-sm font-bold border-2 transition-all duration-300",
-                step === s ? "bg-primary/10 border-primary text-foreground shadow-[0_0_15px_rgba(59,130,246,0.15)]" : 
-                step > s ? "bg-secondary/50 border-border text-foreground hover:bg-secondary" :
-                "bg-card border-border/50 text-muted-foreground hover:border-border"
-              )}>
-              <span className={cn("w-6 h-6 rounded-full flex items-center justify-center text-xs",
-                step === s ? "bg-primary text-primary-foreground" : 
-                step > s ? "bg-foreground text-background" :
-                "bg-muted text-muted-foreground"
-              )}>
-                {step > s ? <CheckCircle size={12} /> : s}
-              </span>
-              {t(STEP_KEYS[s - 1])}
-            </button>
-          ))}
-        </div>
+        <VillePathProgress />
+        <VilleScienceNav />
+        <VilleCampaignIntro />
 
-        {/* Budget bar */}
-        <GlassCard className="p-5">
-          <div className="flex items-center justify-between text-base mb-3">
-            <span className="font-bold text-foreground flex items-center gap-2">
-              <ShoppingBag size={18} className="text-primary" />
+        <VilleLeaderboard />
+
+        {phaseStarted && (
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            <span className="px-2 py-1 rounded-lg bg-primary/10 text-primary font-semibold border border-primary/20">
+              {t("ville.campaignActive")}
+            </span>
+            {hasDamage && (
+              <button
+                type="button"
+                onClick={() => setStep(3)}
+                className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 font-semibold hover:bg-amber-500/25 transition-colors"
+              >
+                <Wrench size={12} />
+                {damageStats.damaged + damageStats.collapsed} {t("ville.needRepair")}
+              </button>
+            )}
+          </div>
+        )}
+
+        <StepStepper step={step} setStep={setStep} />
+
+        <Civ1Panel glowColor="#2e8bc0">
+          <div className="flex items-center justify-between text-sm mb-3">
+            <span className="font-bold flex items-center gap-2">
+              <Coins size={18} className="text-primary" />
               {t("ville.budget")}
             </span>
-            <span className={cn("font-black text-xl tracking-tight", budget < 0 ? "text-red-500" : budget < 200000 ? "text-orange-500" : "text-green-500")}>
+            <span
+              className={cn(
+                "font-black text-xl tabular-nums",
+                budget < 0 ? "text-destructive" : budget < 300_000 ? "text-amber-500" : "text-green-500"
+              )}
+            >
               {budget.toLocaleString()} HTG
             </span>
           </div>
-          <div className="h-3 rounded-full bg-secondary overflow-hidden border border-border/50">
-            <div className="h-full rounded-full transition-all duration-500 ease-out relative overflow-hidden"
-              style={{ width: `${budgetPct}%`, backgroundColor: budget < 0 ? "#ef4444" : budget < 200000 ? "#f97316" : "#22c55e" }}>
-                <div className="absolute inset-0 bg-white/20 animate-shimmer" style={{ backgroundImage: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent)', backgroundSize: '200% 100%' }} />
-              </div>
+          <div className="h-2.5 rounded-full bg-secondary overflow-hidden border border-border/50">
+            <div
+              className="h-full rounded-full transition-all duration-500 bg-gradient-to-r from-primary to-teal-500"
+              style={{ width: `${budgetPct}%` }}
+            />
           </div>
-          <div className="flex justify-between text-xs font-medium text-muted-foreground mt-2">
+          <div className="flex justify-between text-xs text-muted-foreground mt-1.5">
             <span>0 HTG</span>
-            <span>{BUDGET_START.toLocaleString()} HTG</span>
+            <span>{totalBudget.toLocaleString()} HTG</span>
           </div>
-        </GlassCard>
+        </Civ1Panel>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Grid Area */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
           <div className="lg:col-span-7">
-            <GlassCard className="p-6">
-              <div
-                ref={gridRef}
-                tabIndex={0}
-                role="grid"
-                aria-label={t("ville.title")}
-                className={cn("grid gap-2 transition-all duration-500 outline-none focus:ring-2 focus:ring-primary/40 rounded-xl", shaking && "animate-shake")}
-                style={{ gridTemplateColumns: `repeat(${GRID_SIZE}, 1fr)` }}>
-                {grid.map((cell, i) => (
-                  <CellDisplay key={i} cell={cell} onClick={(e) => handleCellClick(i, e.ctrlKey)}
-                    selected={selectedCell === i || selectedCells.has(i)} shakeResult={shakeResults[i] ?? null} />
-                ))}
+            <Civ1Panel title={t("ville.mapTitle")} glowColor="#3b82f6">
+              <VilleGameGrid
+                gridRef={gridRef}
+                grid={grid}
+                gridSize={GRID_SIZE}
+                selectedCell={selectedCell}
+                selectedCells={selectedCells}
+                shakeResults={shakeResults}
+                shaking={shaking}
+                onCellClick={handleCellClick}
+                ariaLabel={t("ville.title")}
+              />
+              <div className="mt-3 flex items-start gap-2 text-xs text-muted-foreground">
+                <Building2 size={14} className="shrink-0 text-primary mt-0.5" />
+                <p>{t("ville.gridHint")}</p>
               </div>
-              <div className="mt-4 flex items-start gap-2 text-xs text-muted-foreground bg-secondary/30 p-3 rounded-lg border border-border/50">
-                <Info size={16} className="shrink-0 text-primary mt-0.5" />
-                <p>
-                  {step === 1
-                    ? t("ville.tip.multi")
-                    : t("ville.tip.single")}
-                </p>
-              </div>
-            </GlassCard>
+            </Civ1Panel>
           </div>
 
-          {/* Controls panel */}
-          <div className="lg:col-span-5 space-y-4">
-            <AnimatePresence mode="wait">
-              {step === 1 && (
-                <motion.div key="step1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-                  <GlassCard className="p-6 space-y-4">
-                    <div className="text-lg font-bold text-foreground flex items-center gap-2 border-b border-border/50 pb-3">
-                      <span className="w-2 h-6 bg-primary rounded-full" />
-                      {t("ville.foundations")}
-                    </div>
-                    {selectedCell === null && selectedCells.size === 0 ? (
-                      <div className="py-8 text-center text-muted-foreground border border-dashed border-border/50 rounded-xl">
-                        <p>{t("ville.selectParcels")}</p>
-                      </div>
-                    ) : (
-                      <div className="space-y-3">
-                        {selectedCells.size > 0 && (
-                          <div className="bg-primary/10 text-primary text-xs font-bold px-3 py-2 rounded-lg border border-primary/20 inline-block">
-                            {selectedCells.size} {t("ville.parcelsSelected")}
-                          </div>
-                        )}
-                        <div className="space-y-2">
-                          {(Object.entries(soilDef) as [Exclude<SoilType, null>, typeof soilDef.rock][]).map(([id, def]) => (
-                            <button key={id} onClick={() => setSoil(id)}
-                              className={cn("w-full text-left p-4 rounded-xl text-sm border-2 transition-all duration-200 hover:shadow-md", def.color,
-                                (selectedCells.size > 0 && Array.from(selectedCells).some(i => grid[i].soil === id)) || (selectedCell !== null && selectedCellData?.soil === id) ? "border-current bg-current/10 scale-[0.98]" : "bg-card hover:bg-secondary/50")}>
-                              <div className="flex justify-between items-center mb-1">
-                                <span className="font-bold">{pickLabel(villeLabels.soil[id], lang)}</span>
-                                <span className="text-xs px-2 py-1 rounded-md bg-background/50 font-mono">Risk ×{def.risk}</span>
-                              </div>
-                              <p className="text-xs opacity-80">{pickDesc(villeLabels.soil[id], lang)}</p>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </GlassCard>
-                </motion.div>
-              )}
-
-              {step === 2 && (
-                <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-                  <GlassCard className="p-6 space-y-4">
-                    <div className="text-lg font-bold text-foreground flex items-center gap-2 border-b border-border/50 pb-3">
-                      <span className="w-2 h-6 bg-primary rounded-full" />
-                      {t("ville.infrastructure")}
-                    </div>
-                    {selectedCell === null ? (
-                      <div className="py-8 text-center text-muted-foreground border border-dashed border-border/50 rounded-xl">
-                        <p>{t("ville.selectBuild")}</p>
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-2 gap-3">
-                        {(Object.entries(buildingDef) as [Exclude<BuildingType, null>, typeof buildingDef.school][]).map(([id, def]) => {
-                          const Icon = def.icon
-                          const buildingCost = Math.round(def.costBase * constructDef["ciment"].multiplier)
-                          const testGrid = grid.map((c, i) => i === selectedCell ? { ...c, building: id as BuildingType, construct: c.construct ?? "ciment" } : c)
-                          const wouldExceedBudget = calculateBudgetAfterAction(testGrid) < 0
-                          const isSelected = selectedCellData?.building === id
-                          
-                          return (
-                            <button key={id} onClick={() => placeBuilding(id)} disabled={wouldExceedBudget}
-                              className={cn("flex flex-col items-center justify-center p-4 rounded-xl text-sm border-2 transition-all duration-200",
-                                wouldExceedBudget ? "opacity-40 cursor-not-allowed bg-secondary/30 border-border/50" :
-                                isSelected ? "bg-primary/10 border-primary text-primary shadow-sm scale-[0.98]" : "bg-card border-border hover:border-primary/50 hover:bg-secondary/50 text-foreground"
-                              )}
-                              title={wouldExceedBudget ? t("ville.insufficientBudget") : ""}>
-                              <Icon size={24} className="mb-2" />
-                              <span className="font-bold mb-1">{pickLabel(villeLabels.building[id], lang)}</span>
-                              <span className="text-xs font-mono opacity-70">{buildingCost.toLocaleString()} HTG</span>
-                            </button>
-                          )
-                        })}
-                      </div>
-                    )}
-                  </GlassCard>
-                </motion.div>
-              )}
-
-              {step === 3 && (
-                <motion.div key="step3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-                  <GlassCard className="p-6 space-y-4">
-                    <div className="text-lg font-bold text-foreground flex items-center gap-2 border-b border-border/50 pb-3">
-                      <span className="w-2 h-6 bg-primary rounded-full" />
-                      {t("ville.materialsNorms")}
-                    </div>
-                    {selectedCell === null ? (
-                      <div className="py-8 text-center text-muted-foreground border border-dashed border-border/50 rounded-xl">
-                        <p>{t("ville.selectExisting")}</p>
-                      </div>
-                    ) : !selectedCellData?.building ? (
-                      <div className="py-8 text-center text-orange-500/80 border border-dashed border-orange-500/30 bg-orange-500/5 rounded-xl">
-                        <p>{t("ville.buildFirst")}</p>
-                      </div>
-                    ) : (
-                      <div className="space-y-3">
-                        {(Object.entries(constructDef) as [Exclude<ConstructType, null>, typeof constructDef.parasismique][]).map(([id, def]) => {
-                          const testGrid = grid.map((c, i) => i === selectedCell ? { ...c, construct: id } : c)
-                          const wouldExceedBudget = calculateBudgetAfterAction(testGrid) < 0
-                          const isSelected = selectedCellData?.construct === id
-                          
-                          return (
-                            <button key={id} onClick={() => setConstruct(id)} disabled={wouldExceedBudget}
-                              className={cn("w-full flex flex-col p-4 rounded-xl text-sm border-2 transition-all duration-200 text-left",
-                                wouldExceedBudget ? "opacity-40 cursor-not-allowed bg-secondary/30 border-border/50" :
-                                isSelected ? "bg-card border-current shadow-sm scale-[0.98]" : "bg-card border-border hover:border-current/50 hover:bg-secondary/50",
-                                def.color
-                              )}
-                              title={wouldExceedBudget ? t("ville.insufficientBudget") : ""}>
-                              <span className="font-bold text-base mb-2">{pickLabel(villeLabels.construct[id], lang)}</span>
-                              <div className="flex gap-4 text-xs font-mono opacity-80 bg-background/50 p-2 rounded-lg inline-flex">
-                                <span className="flex items-center gap-1"><Shield size={12}/> {t("ville.resistance")}: {(def.resistance*100).toFixed(0)}%</span>
-                                <span className="flex items-center gap-1"><ShoppingBag size={12}/> {t("ville.cost")}: ×{def.multiplier}</span>
-                              </div>
-                            </button>
-                          )
-                        })}
-                      </div>
-                    )}
-                  </GlassCard>
-                </motion.div>
-              )}
-
-              {step === 4 && (
-                <motion.div key="step4" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-                  <GlassCard className="p-6 space-y-6">
-                    <div className="text-lg font-bold text-foreground flex items-center gap-2 border-b border-border/50 pb-3">
-                      <span className="w-2 h-6 bg-destructive rounded-full" />
-                      {t("ville.seismicTest")}
-                    </div>
-                    
-                    <div className="bg-secondary/30 p-4 rounded-xl border border-border/50 text-center">
-                      <div className="text-3xl font-black text-foreground mb-1">{totalBuildings}</div>
-                      <div className="text-sm text-muted-foreground uppercase tracking-wider font-bold">
-                        {t("ville.buildingsBuilt")}
-                      </div>
-                    </div>
-
-                    <button onClick={runEarthquake} disabled={totalBuildings === 0 || shaking}
-                      className="w-full py-4 rounded-xl bg-destructive hover:bg-destructive/90 text-destructive-foreground font-black text-lg transition-all duration-300 disabled:opacity-40 flex items-center justify-center gap-3 shadow-[0_0_20px_rgba(220,38,38,0.4)] hover:shadow-[0_0_30px_rgba(220,38,38,0.6)] active:scale-[0.98]">
-                      <Zap size={24} className={cn(shaking && "animate-pulse")} />
-                      {t("ville.triggerQuake")}
-                    </button>
-                    
-                    <button onClick={reset} disabled={shaking}
-                      className="w-full py-3 rounded-xl bg-secondary text-foreground font-bold text-sm hover:bg-secondary/80 transition-colors flex items-center justify-center gap-2 border border-border">
-                      <RotateCcw size={16} />
-                      {t("ville.resetCity")}
-                    </button>
-                  </GlassCard>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {/* TECLA tip */}
-            <AnimatePresence>
-              {selectedCellData?.construct && step === 3 && (
-                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}>
-                  <GlassCard className="p-4 border-l-4 border-l-blue-500 bg-blue-500/5">
-                    <div className="flex gap-3">
-                      <Info size={20} className="text-blue-500 shrink-0" />
-                      <p className="text-sm text-blue-700 dark:text-blue-300 font-medium leading-relaxed">
-                        {l(villeTeclaTips[selectedCellData.construct] ?? villeTeclaTips.null, lang)}
-                      </p>
-                    </div>
-                  </GlassCard>
-                </motion.div>
-              )}
-            </AnimatePresence>
+          <div className="lg:col-span-5">
+            <StepControlPanel
+              {...game}
+              role={role}
+              setRole={setRole}
+              handleCellClick={handleCellClick}
+            />
           </div>
         </div>
-      </div>
 
-      <Dialog open={showResults} onOpenChange={setShowResults}>
-        <DialogContent className="max-w-2xl border-t-4 border-t-primary">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-black flex items-center gap-2">
-              <Activity size={24} className="text-primary" />
-              {t("ville.postQuake")}
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="grid grid-cols-3 gap-4 mb-6">
-            <div className="text-center p-4 rounded-xl bg-green-500/10 border border-green-500/20 shadow-inner">
-              <div className="text-4xl font-black text-green-600 dark:text-green-400 mb-1">{resistantCount}</div>
-              <div className="text-xs font-bold text-green-700 dark:text-green-500 uppercase tracking-wider">{t("ville.intact")}</div>
-            </div>
-            <div className="text-center p-4 rounded-xl bg-orange-500/10 border border-orange-500/20 shadow-inner">
-              <div className="text-4xl font-black text-orange-600 dark:text-orange-400 mb-1">
-                {Object.values(shakeResults).filter(r => r === "damaged").length}
-              </div>
-              <div className="text-xs font-bold text-orange-700 dark:text-orange-500 uppercase tracking-wider">{t("ville.damaged")}</div>
-            </div>
-            <div className="text-center p-4 rounded-xl bg-red-500/10 border border-red-500/20 shadow-inner">
-              <div className="text-4xl font-black text-red-600 dark:text-red-400 mb-1">
-                {Object.values(shakeResults).filter(r => r === "collapsed").length}
-              </div>
-              <div className="text-xs font-bold text-red-700 dark:text-red-500 uppercase tracking-wider">{t("ville.collapsed")}</div>
-            </div>
-          </div>
-
-          <div className="bg-secondary/50 p-4 rounded-xl border border-border text-center">
-            <p className="text-sm font-medium text-foreground">
-              {totalBuildings > 0
-                ? `${Math.round((resistantCount / totalBuildings) * 100)}% ${t("ville.survived")}`
-                : ""}
-            </p>
-            {resistantCount / totalBuildings < 0.5 && totalBuildings > 0 && (
-              <p className="text-xs text-red-500 mt-2 font-bold">{t("ville.badChoices")}</p>
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className={cn(villeAdvisor, "flex gap-3")}
+        >
+          <div className="shrink-0 w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+            {hasDamage ? (
+              <AlertTriangle size={16} className="text-amber-500" />
+            ) : (
+              <Building2 size={16} className="text-primary" />
             )}
           </div>
-        </DialogContent>
-      </Dialog>
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wider text-primary mb-1">
+              {t("ville.advisorTitle")}
+            </p>
+            <p className="leading-relaxed">{advisorText}</p>
+          </div>
+        </motion.div>
+
+        <VilleQuizPanel />
+
+        <button
+          type="button"
+          onClick={() => setActiveModule("prevention")}
+          className="w-full flex items-center justify-center gap-2 px-5 py-4 rounded-2xl border border-primary/30 bg-primary/5 text-sm font-bold hover:bg-primary/10 transition-colors"
+        >
+          <ShieldCheck size={18} /> {t("ville.cta.prevention")}
+        </button>
+      </div>
+
+      <ResultsDialog
+        open={showResults}
+        onOpenChange={setShowResults}
+        report={simulationReport}
+        resultsMode={resultsMode}
+        phaseIndex={phaseIndex}
+        totalPhases={HAITI_EARTHQUAKE_PHASES.length}
+        onRetry={reset}
+        onContinuePhase={resultsMode === "phase" ? continueAfterPhase : undefined}
+      />
     </div>
   )
 }

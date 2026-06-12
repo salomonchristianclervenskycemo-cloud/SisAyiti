@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test'
 
 test('home page loads with SisAyiti branding', async ({ page }) => {
   await page.goto('/')
-  await expect(page.locator('text=SéismoHaïti').first()).toBeVisible({ timeout: 15_000 })
+  await expect(page.locator('text=SisAyiti').first()).toBeVisible({ timeout: 15_000 })
 })
 
 test('health API responds', async ({ request }) => {

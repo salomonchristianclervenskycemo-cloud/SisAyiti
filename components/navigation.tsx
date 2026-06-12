@@ -2,6 +2,7 @@
 import { useApp, type ModuleId } from "@/lib/app-context"
 import { useLang } from "@/lib/lang-context"
 import { cn } from "@/lib/utils"
+import { SisAyitiLogo } from "@/components/home/sisayiti-logo"
 import {
   BookOpen, FlaskConical, Building2, Map, ShieldCheck,
   Mountain, Stethoscope, Home, Radio
@@ -26,18 +27,8 @@ export function Sidebar() {
   return (
     <aside className="hidden md:flex flex-col w-64 min-h-screen bg-card/80 backdrop-blur-xl border-r border-border fixed top-0 left-0 z-40 shadow-[4px_0_24px_rgba(0,0,0,0.05)] dark:shadow-[4px_0_24px_rgba(0,0,0,0.2)]">
       {/* Logo */}
-      <div className="p-5 border-b border-border transition-all duration-300">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent/80 border border-primary/40 flex items-center justify-center shadow-md">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <path d="M2 12 L6 8 L10 14 L14 6 L18 13 L22 10" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-primary-foreground"/>
-            </svg>
-          </div>
-          <div>
-            <div className="font-bold text-foreground text-sm leading-tight">SéismoHaïti</div>
-            <div className="text-xs text-muted-foreground font-medium">v1.0</div>
-          </div>
-        </div>
+      <div className="p-4 border-b border-border transition-all duration-300">
+        <SisAyitiLogo variant="compact" className="w-full" />
       </div>
 
       {/* Nav items */}

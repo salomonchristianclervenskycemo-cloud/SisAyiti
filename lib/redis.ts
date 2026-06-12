@@ -4,12 +4,31 @@ let redis: Redis | null = null
 
 let redisErrorLogged = false
 
+let connectPromise: Promise<void> | null = null
+
+async function ensureRedisConnected(): Promise<boolean> {
+  if (!redis) return false
+  try {
+    if (redis.status !== 'ready' && redis.status !== 'connect') {
+      if (!connectPromise) {
+        connectPromise = redis.connect().then(() => undefined)
+      }
+      await connectPromise
+    }
+    await redis.ping()
+    return true
+  } catch {
+    connectPromise = null
+    return false
+  }
+}
+
 if (process.env.REDIS_URL) {
   try {
     redis = new Redis(process.env.REDIS_URL, {
       maxRetriesPerRequest: 1,
       lazyConnect: true,
-      connectTimeout: 2000,
+      connectTimeout: 3000,
       retryStrategy(times) {
         if (times > 2) {
           if (!redisErrorLogged) {
@@ -31,12 +50,13 @@ if (process.env.REDIS_URL) {
   } catch (e) {
     console.error('Failed to initialize Redis client:', e)
   }
-} else {
-  console.log('REDIS_URL is not set. Cache features will be disabled.')
+} else if (process.env.NODE_ENV === 'development') {
+  console.log('[redis] REDIS_URL non défini — cache mémoire serveur uniquement.')
 }
 
 export async function getCache<T>(key: string): Promise<T | null> {
   if (!redis) return null
+  if (!(await ensureRedisConnected())) return null
   try {
     const data = await redis.get(key)
     return data ? (JSON.parse(data) as T) : null
@@ -45,8 +65,9 @@ export async function getCache<T>(key: string): Promise<T | null> {
   }
 }
 
-export async function setCache(key: string, value: any, ttlSeconds = 3600): Promise<boolean> {
+export async function setCache(key: string, value: unknown, ttlSeconds = 3600): Promise<boolean> {
   if (!redis) return false
+  if (!(await ensureRedisConnected())) return false
   try {
     const serialized = JSON.stringify(value)
     await redis.set(key, serialized, 'EX', ttlSeconds)

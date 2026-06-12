@@ -11,7 +11,7 @@ type LayerKey = keyof LayerVisibility
 const LAYER_ICONS: Record<LayerKey, React.ReactNode> = {
   earthquakes: <CircleDot size={16} className="text-cyan-400" />,
   clusters: <Layers size={16} className="text-sky-400" />,
-  faults: <GitBranch size={16} className="text-orange-400" />,
+  faults: <GitBranch size={16} className="text-red-400" />,
   liquefaction: <Waves size={16} className="text-rose-400" />,
   riskZones: <Map size={16} className="text-red-400" />,
   heatmap: <Flame size={16} className="text-amber-400" />,

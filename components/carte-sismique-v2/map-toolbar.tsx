@@ -4,6 +4,7 @@ import { useState } from 'react'
 import type maplibregl from 'maplibre-gl'
 import {
   Crosshair,
+  BookOpen,
   Filter,
   Layers,
   LocateFixed,
@@ -13,7 +14,7 @@ import {
   Satellite,
 } from 'lucide-react'
 import { useSeismicStore } from '@/lib/seismic-store'
-import { HAITI_BOUNDS_FIT } from '@/lib/seismic-map-style'
+import { resetMapToHaitiView } from '@/lib/map-viewport'
 import { getCurrentPosition, isGeolocationSupported } from '@/shared/geolocation'
 import { LayerToggle } from './layer-toggle'
 import { FilterPanel } from './filter-panel'
@@ -26,9 +27,16 @@ const glassBtn =
 export function MapToolbar({
   lang,
   map,
+  onAfterResetHaiti,
+  showGuide,
+  onToggleGuide,
 }: {
   lang: Lang
   map: maplibregl.Map | null
+  /** Recharge le flux Haïti après « Centrer Haïti » */
+  onAfterResetHaiti?: () => void
+  showGuide?: boolean
+  onToggleGuide?: () => void
 }) {
   const tb = mapToolbarT[toMapLocale(lang)]
   const [showLayers, setShowLayers] = useState(false)
@@ -44,7 +52,7 @@ export function MapToolbar({
 
   const fitHaiti = () => {
     if (!map) return
-    map.fitBounds(HAITI_BOUNDS_FIT, { padding: 48, duration: 900 })
+    resetMapToHaitiView(map, { onAfterReset: onAfterResetHaiti })
   }
 
   const locateMe = async () => {
@@ -124,6 +132,21 @@ export function MapToolbar({
           aria-label={tb.filters}
         >
           <Filter size={18} />
+        </button>
+
+        <div className="h-1" />
+
+        <button
+          type="button"
+          className={`${glassBtn} ${showGuide ? 'text-cyan-400 border-cyan-500/40' : ''}`}
+          onClick={() => {
+            onToggleGuide?.()
+            setShowLayers(false)
+            setShowFilters(false)
+          }}
+          aria-label={tb.guide}
+        >
+          <BookOpen size={18} />
         </button>
       </div>
 

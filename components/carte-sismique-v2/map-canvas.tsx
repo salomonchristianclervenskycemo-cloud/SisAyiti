@@ -3,12 +3,17 @@
 import { useEffect, useRef } from 'react'
 import maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
-import { useSeismicStore } from '@/lib/seismic-store'
+import { setSeismicMapFocusEventId, useSeismicStore } from '@/lib/seismic-store'
 import { DEFAULT_LAYERS } from '@/lib/seismic-types'
-import { filterSeismicEvents, useFilteredEvents } from '@/hooks/use-map-filters'
+import { getMapDisplayEvents, useMapFilteredEvents } from '@/hooks/use-map-filters'
 import { CARTO_DARK_STYLE, SATELLITE_STYLE } from '@/lib/seismic-layers-data'
+import {
+  boundsAroundEvent,
+  focusZoomForEvent,
+  HAITI_MAX_BOUNDS,
+  isEventOutsideHaitiMap,
+} from '@/lib/map-viewport'
 import { HAITI_CENTER } from '@/lib/seismic-map-style'
-import { HAITI_MAX_BOUNDS } from '@/lib/seismic-geo'
 import { isPinnedHistoricalEvent } from '@/lib/haiti-historical-seismic'
 import {
   applyLayerVisibility,
@@ -33,12 +38,26 @@ export function MapCanvas({ onMapReady, onCoordsChange }: MapCanvasProps) {
   const onSelectRef = useRef<((id: string, coords: [number, number]) => void) | undefined>(undefined)
   const onHoverRef = useRef<((event: import('@/lib/map-hover-types').MapHoverEvent | null) => void) | undefined>(undefined)
 
-  const filteredEvents = useFilteredEvents()
+  const filteredEvents = useMapFilteredEvents()
   const mapStyle = useSeismicStore((s) => s.mapStyle)
   const layers = useSeismicStore((s) => s.layers) ?? DEFAULT_LAYERS
   const setSelectedEvent = useSeismicStore((s) => s.setSelectedEvent)
   const selectedId = useSeismicStore((s) => s.selectedEvent?.id)
+  const mapFocusEventId = useSeismicStore((s) => s.mapFocusEventId)
+  const mapViewportExpanded = useSeismicStore((s) => s.mapViewportExpanded)
   const events = useSeismicStore((s) => s.events)
+
+  const applyMapViewportConstraints = (map: maplibregl.Map, expanded: boolean) => {
+    try {
+      if (expanded) {
+        map.setMaxBounds(null)
+      } else {
+        map.setMaxBounds(HAITI_MAX_BOUNDS)
+      }
+    } catch {
+      /* ignore if map destroyed */
+    }
+  }
 
   /* ---------------------------------------------------------------- */
   /*  Initialisation unique de la carte                                */
@@ -55,7 +74,7 @@ export function MapCanvas({ onMapReady, onCoordsChange }: MapCanvasProps) {
       zoom: 7.8,
       minZoom: 5,
       maxZoom: 15,
-      maxBounds: HAITI_MAX_BOUNDS,
+      maxBounds: useSeismicStore.getState().mapViewportExpanded ? undefined : HAITI_MAX_BOUNDS,
       attributionControl: false,
       maxPitch: 0,
     })
@@ -89,7 +108,12 @@ export function MapCanvas({ onMapReady, onCoordsChange }: MapCanvasProps) {
         .then(() => {
           readyRef.current = true
           const st = useSeismicStore.getState()
-          const filtered = filterSeismicEvents(st.events, st.filters)
+          const filtered = getMapDisplayEvents(
+            st.events,
+            st.filters,
+            st.selectedEvent,
+            st.mapFocusEventId
+          )
           updateEarthquakeData(map, filtered)
           applyLayerVisibility(map, st.layers)
 
@@ -115,6 +139,10 @@ export function MapCanvas({ onMapReady, onCoordsChange }: MapCanvasProps) {
         })
         .catch((err) => console.error('[map] setup failed:', err))
     }
+
+    map.on('error', (e) => {
+      console.warn('[map] MapLibre error (non bloquant):', e.error?.message ?? e)
+    })
 
     map.once('load', () => runSetup(false))
 
@@ -142,13 +170,22 @@ export function MapCanvas({ onMapReady, onCoordsChange }: MapCanvasProps) {
   /* ---------------------------------------------------------------- */
   useEffect(() => {
     const map = mapRef.current
-    if (!map) return
-    if (map.getSource('earthquakes')) {
+    if (!map || !readyRef.current) return
+
+    const pushData = () => {
+      if (!map.getSource('earthquakes')) return false
       updateEarthquakeData(map, filteredEvents)
-    }
-    if (readyRef.current) {
       applyLayerVisibility(map, layers)
+      return true
     }
+
+    if (pushData()) return
+
+    const timer = window.setInterval(() => {
+      if (pushData()) window.clearInterval(timer)
+    }, 100)
+
+    return () => window.clearInterval(timer)
   }, [filteredEvents, events.length, layers])
 
   /* ---------------------------------------------------------------- */
@@ -180,23 +217,78 @@ export function MapCanvas({ onMapReady, onCoordsChange }: MapCanvasProps) {
   }, [mapStyle])
 
   /* ---------------------------------------------------------------- */
-  /*  Highlight événement sélectionné                                  */
+  /*  Focus carte (navigation depuis Actualités)                       */
+  /* ---------------------------------------------------------------- */
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !readyRef.current || !mapFocusEventId) return
+
+    const st = useSeismicStore.getState()
+    const ev =
+      st.selectedEvent?.id === mapFocusEventId
+        ? st.selectedEvent
+        : st.events.find((e) => e.id === mapFocusEventId) ?? st.selectedEvent
+    if (!ev) return
+
+    const outside = isEventOutsideHaitiMap(ev)
+    applyMapViewportConstraints(map, outside)
+
+    if (st.selectedEvent?.id !== ev.id) setSelectedEvent(ev)
+    highlightSelectedEvent(map, ev.id)
+
+    if (outside) {
+      map.fitBounds(boundsAroundEvent(ev.latitude, ev.longitude), {
+        padding: 72,
+        maxZoom: focusZoomForEvent(ev, true),
+        duration: 1000,
+      })
+    } else {
+      map.flyTo({
+        center: [ev.longitude, ev.latitude],
+        zoom: focusZoomForEvent(ev, false),
+        duration: 1000,
+        essential: true,
+      })
+    }
+    setSeismicMapFocusEventId(null)
+  }, [mapFocusEventId, filteredEvents, setSelectedEvent])
+
+  /* ---------------------------------------------------------------- */
+  /*  Contraintes vue Haïti / contexte global                          */
   /* ---------------------------------------------------------------- */
   useEffect(() => {
     const map = mapRef.current
     if (!map || !readyRef.current) return
+    applyMapViewportConstraints(map, mapViewportExpanded)
+  }, [mapViewportExpanded])
+
+  /* ---------------------------------------------------------------- */
+  /*  Highlight événement sélectionné                                  */
+  /* ---------------------------------------------------------------- */
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !readyRef.current || mapFocusEventId) return
     highlightSelectedEvent(map, selectedId ?? null)
     if (!selectedId) return
     const ev = events.find((e) => e.id === selectedId)
     if (ev) {
-      map.flyTo({
-        center: [ev.longitude, ev.latitude],
-        zoom: Math.max(map.getZoom(), 9.5),
-        duration: 800,
-        essential: true,
-      })
+      const outside = mapViewportExpanded || isEventOutsideHaitiMap(ev)
+      if (outside) {
+        map.fitBounds(boundsAroundEvent(ev.latitude, ev.longitude), {
+          padding: 64,
+          maxZoom: focusZoomForEvent(ev, true),
+          duration: 800,
+        })
+      } else {
+        map.flyTo({
+          center: [ev.longitude, ev.latitude],
+          zoom: focusZoomForEvent(ev, false),
+          duration: 800,
+          essential: true,
+        })
+      }
     }
-  }, [selectedId, events])
+  }, [selectedId, events, mapFocusEventId, mapViewportExpanded])
 
   return <div ref={containerRef} className="w-full h-full" />
 }

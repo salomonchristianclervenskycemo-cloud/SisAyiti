@@ -1,6 +1,7 @@
 'use client'
 
-import { X, MapPin, Clock, Database, Waves } from 'lucide-react'
+import { X, MapPin, Clock, Database, Waves, ExternalLink } from 'lucide-react'
+import { officialLinkSourceLabel, resolveOfficialLink } from '@/lib/surveillance/official-link'
 import { riskColor, type SeismicEventUI } from '@/lib/seismic-types'
 import { formatEventDateHaiti } from '@/lib/haiti-region-resolver'
 import {
@@ -11,7 +12,7 @@ import {
   HAITI_REFERENCE,
   isInHaitiBounds,
 } from '@/lib/seismic-geo'
-import { format, formatDistanceToNow } from 'date-fns'
+import { formatDistanceToNow } from 'date-fns'
 import { fr, enUS, es } from 'date-fns/locale'
 
 import type { Lang } from '@/lib/i18n'
@@ -52,6 +53,8 @@ export function EventCard({ event, lang, onClose }: EventCardProps) {
   )
   const inZone = isInHaitiBounds(event.latitude, event.longitude)
   const eventDate = new Date(event.eventTime)
+  const officialUrl = resolveOfficialLink(null, event)
+  const officialSource = officialUrl ? officialLinkSourceLabel(officialUrl) : null
 
   return (
     <div className="p-5 h-full flex flex-col overflow-y-auto">
@@ -144,6 +147,21 @@ export function EventCard({ event, lang, onClose }: EventCardProps) {
         <div className="mt-2 px-3 py-2 rounded-lg bg-blue-500/20 border border-blue-500/40 text-xs text-blue-300">
           ⚠ {extras.tsunami}
         </div>
+      )}
+
+      {officialUrl && (
+        <a
+          href={officialUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-4 inline-flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-lg bg-white/5 border border-white/15 text-sm font-semibold text-cyan-300 hover:bg-white/10 transition-colors"
+        >
+          <ExternalLink size={16} aria-hidden />
+          {extras.officialReport}
+          {officialSource && officialSource !== 'other' && (
+            <span className="text-[10px] uppercase tracking-wide text-gray-500">{officialSource}</span>
+          )}
+        </a>
       )}
     </div>
   )

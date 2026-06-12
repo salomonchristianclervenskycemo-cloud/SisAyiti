@@ -1,4 +1,20 @@
 import type maplibregl from 'maplibre-gl'
+import type { ExpressionSpecification } from 'maplibre-gl'
+import { MAP_FONT_BOLD } from './map-glyphs'
+
+/** Jamais de chaîne vide — sinon crash MapLibre (_numberToString.length 0) */
+export const earthquakeMagTextField: ExpressionSpecification = [
+  'concat',
+  'M',
+  ['to-string', ['coalesce', ['get', 'magnitude'], 0]],
+]
+
+export const earthquakePlaceTextField: ExpressionSpecification = [
+  'coalesce',
+  ['get', 'placeLabel'],
+  ['get', 'region'],
+  'Ayiti',
+]
 
 export const HAITI_CENTER: [number, number] = [-72.29, 18.97]
 export const HAITI_BOUNDS_FIT: [[number, number], [number, number]] = [
@@ -83,8 +99,8 @@ export const earthquakeHaloPaint: maplibregl.CircleLayerSpecification['paint'] =
 export const earthquakeRingPaint: maplibregl.CircleLayerSpecification['paint'] = {
   'circle-radius': [
     'interpolate', ['linear'], ['zoom'],
-    1, ['max', 2, ['/', ['get', 'magnitude'], 1.5]],
-    8, ['max', 4, ['*', ['get', 'magnitude'], 1.2]]
+    1, ['max', 2, ['/', ['coalesce', ['get', 'magnitude'], 2], 1.5]],
+    8, ['max', 4, ['*', ['coalesce', ['get', 'magnitude'], 2], 1.2]]
   ],
   'circle-color': riskColorExpr,
   'circle-opacity': 0.9,
@@ -138,12 +154,7 @@ export const earthquakePulseBaseRadius: maplibregl.ExpressionSpecification = [
 ]
 
 export const earthquakeMagLabelLayout: maplibregl.SymbolLayerSpecification['layout'] = {
-  'text-field': [
-    'case',
-    ['all', ['has', 'magnitude'], ['!', ['has', 'point_count']]],
-    ['concat', 'M', ['to-string', ['coalesce', ['get', 'magnitude'], 0]]],
-    '',
-  ],
+  'text-field': earthquakeMagTextField,
   'text-size': [
     'interpolate',
     ['linear'],
@@ -152,7 +163,7 @@ export const earthquakeMagLabelLayout: maplibregl.SymbolLayerSpecification['layo
     8, 12,
     10, 14,
   ],
-  'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
+  'text-font': [...MAP_FONT_BOLD],
   'text-anchor': 'center',
   'text-allow-overlap': true,
   'text-optional': true,
@@ -160,14 +171,9 @@ export const earthquakeMagLabelLayout: maplibregl.SymbolLayerSpecification['layo
 }
 
 export const earthquakePlaceLabelLayout: maplibregl.SymbolLayerSpecification['layout'] = {
-  'text-field': [
-    'case',
-    ['all', ['has', 'placeLabel'], ['!', ['has', 'point_count']]],
-    ['get', 'placeLabel'],
-    '',
-  ],
+  'text-field': earthquakePlaceTextField,
   'text-size': ['interpolate', ['linear'], ['zoom'], 7, 9, 9, 10, 11, 11],
-  'text-font': ['Open Sans Regular', 'Arial Unicode MS Regular'],
+  'text-font': [...MAP_FONT_BOLD],
   'text-offset': [0, 1.6],
   'text-anchor': 'top',
   'text-max-width': 12,

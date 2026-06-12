@@ -9,6 +9,7 @@ import {
   type SeismicEventUI,
   type SeismicStats,
 } from './seismic-types'
+import type { SeismicDataHydration } from './seismic-hydration'
 
 interface SeismicStore {
   events: SeismicEventUI[]
@@ -24,6 +25,12 @@ interface SeismicStore {
   fetchDays: number
   dataSource: string | null
   liveEnabled: boolean
+  /** Dernière hydratation store (surveillance ou carte) — évite double fetch */
+  dataHydration: SeismicDataHydration | null
+  /** Focus carte après « Voir sur la carte » (id événement) */
+  mapFocusEventId: string | null
+  /** Vue élargie hors Haïti (séisme global depuis Actualités) */
+  mapViewportExpanded: boolean
   setEvents: (events: SeismicEventUI[]) => void
   setStats: (stats: SeismicStats | null) => void
   setSelectedEvent: (event: SeismicEventUI | null) => void
@@ -37,6 +44,9 @@ interface SeismicStore {
   setFetchDays: (days: number) => void
   setDataSource: (source: string | null) => void
   setLiveEnabled: (enabled: boolean) => void
+  setDataHydration: (hydration: SeismicDataHydration | null) => void
+  setMapFocusEventId: (mapFocusEventId: string | null) => void
+  setMapViewportExpanded: (mapViewportExpanded: boolean) => void
   prependEvent: (event: SeismicEventUI) => void
 }
 
@@ -60,9 +70,12 @@ export const useSeismicStore = create<SeismicStore>((set) => ({
   isLoading: true,
   lastSync: null,
   liveConnected: false,
-  fetchDays: 30,
+  fetchDays: 7,
   dataSource: null,
   liveEnabled: true,
+  dataHydration: null,
+  mapFocusEventId: null,
+  mapViewportExpanded: false,
   setEvents: (events) => set({ events }),
   setStats: (stats) => set({ stats }),
   setSelectedEvent: (selectedEvent) => set({ selectedEvent }),
@@ -97,8 +110,20 @@ export const useSeismicStore = create<SeismicStore>((set) => ({
   setFetchDays: (fetchDays) => set({ fetchDays }),
   setDataSource: (dataSource) => set({ dataSource }),
   setLiveEnabled: (liveEnabled) => set({ liveEnabled }),
+  setDataHydration: (dataHydration) => set({ dataHydration }),
+  setMapFocusEventId: (mapFocusEventId) => set({ mapFocusEventId }),
+  setMapViewportExpanded: (mapViewportExpanded) => set({ mapViewportExpanded }),
   prependEvent: (event) =>
     set((s) => ({
       events: [event, ...s.events.filter((e) => e.id !== event.id)].slice(0, 1000),
     })),
 }))
+
+/** Mise à jour impérative — évite les sélecteurs Zustand undefined après HMR */
+export function setSeismicMapViewportExpanded(expanded: boolean) {
+  useSeismicStore.setState({ mapViewportExpanded: expanded })
+}
+
+export function setSeismicMapFocusEventId(mapFocusEventId: string | null) {
+  useSeismicStore.setState({ mapFocusEventId })
+}

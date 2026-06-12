@@ -29,7 +29,7 @@ const moduleNameKeys: Record<ModuleId, string> = {
 
 const LANG_OPTIONS: { code: Lang; label: string }[] = [
   { code: "fr", label: "FR" },
-  { code: "kr", label: "KR" },
+  { code: "kr", label: "HT" },
   { code: "en", label: "EN" },
   { code: "es", label: "ES" },
 ]

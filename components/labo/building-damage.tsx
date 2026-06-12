@@ -10,7 +10,7 @@ interface BuildingDamageProps {
 const COLLAPSE_BANNER = { fr: "EFFONDREMENT", kr: "TONBE", en: "COLLAPSE", es: "COLAPSO" }
 
 const DAMAGE_LABELS: Record<DamageState, { fr: string; kr: string; en: string; es: string }> = {
-  none: { fr: "Intact", kr: "An entegrite", en: "Intact", es: "Intacto" },
+  none: { fr: "Intact", kr: "Pa domaje", en: "Intact", es: "Intacto" },
   slight: { fr: "Fissuré", kr: "Fisire", en: "Cracked", es: "Agrietado" },
   moderate: { fr: "Fissuré", kr: "Fisire", en: "Cracked", es: "Agrietado" },
   extensive: { fr: "Endommagé", kr: "Domaje", en: "Damaged", es: "Dañado" },

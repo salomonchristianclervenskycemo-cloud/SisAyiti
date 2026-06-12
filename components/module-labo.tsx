@@ -1,10 +1,17 @@
 "use client"
 import { useRef } from "react"
 import { useLang } from "@/lib/lang-context"
+import { useApp } from "@/lib/app-context"
 import { cn } from "@/lib/utils"
 import { useLaboSimulation } from "@/hooks/use-labo-simulation"
-import { Zap, AlertTriangle, Building, Waves, Info, Activity, Flame, Target } from "lucide-react"
+import { Zap, AlertTriangle, Building, Waves, Info, Activity, Flame, Target, ShieldCheck } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
+import { LaboPathProgress } from "@/components/labo/labo-path-progress"
+import { LaboPresetBanner } from "@/components/labo/labo-preset-banner"
+import { LaboScienceNav } from "@/components/labo/labo-science-nav"
+import { LaboQuizPanel } from "@/components/labo/labo-quiz-panel"
+import { LaboScenarioList } from "@/components/labo/labo-scenario-list"
+import type { LaboScenario } from "@/lib/labo-constants"
 
 import { Slider } from "@/components/ui/slider"
 import {
@@ -36,9 +43,8 @@ import {
   INTENSITY_COLORS, 
   INTENSITY_LABELS, 
   INTENSITY_DESC,
-  REAL_SCENARIOS 
 } from "@/lib/labo-constants"
-import { pickLabel, pickDesc } from "@/lib/i18n"
+import { pickLabel } from "@/lib/i18n"
 
 import { BuildingDamage } from "./labo/building-damage"
 import { PGAGauge } from "./labo/pga-gauge"
@@ -46,10 +52,12 @@ import { WaveAnimation } from "./labo/wave-animation"
 
 export default function ModuleLabo() {
   const { lang, t } = useLang()
+  const { setActiveModule } = useApp()
   const resultsRef = useRef<HTMLDivElement>(null)
   const {
     magnitude, setMagnitude, distance, setDistance, soilId, setSoilId, soil,
     buildingQuality, setBuildingQuality, shaking, triggerShake,
+    fromDiagnostic, presetInfo, dismissPresetBanner,
     pga, intensity, damageProbs, damageState, isDangerous, isFatal,
     tntTons, hiroshimaBombs, feltRadius,
   } = useLaboSimulation()
@@ -59,7 +67,7 @@ export default function ModuleLabo() {
   else if (tntTons < 1000000) energyText = `${(tntTons / 1000).toFixed(1)} kt TNT`
   else energyText = `${(tntTons / 1000000).toFixed(1)} Mt TNT`
 
-  const applyScenario = (s: typeof REAL_SCENARIOS[0]) => {
+  const applyScenario = (s: LaboScenario) => {
     setMagnitude(s.mag)
     setDistance(s.dist)
     setSoilId(s.soil)
@@ -77,14 +85,22 @@ export default function ModuleLabo() {
         <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-blue-500/5 via-background to-red-500/5 dark:from-blue-900/20 dark:to-red-900/10 pointer-events-none z-0" />
 
         <div className="max-w-4xl mx-auto relative z-10 space-y-8">
-          <div className="mb-8">
+          <div className="mb-2">
             <h2 className="text-3xl md:text-4xl font-black tracking-tight text-foreground">
               {t("labo.title")}
             </h2>
             <p className="text-sm text-muted-foreground mt-2 max-w-2xl">
-              {t("labo.subtitle")}
+              {t("labo.subtitleLong")}
             </p>
           </div>
+
+          <LaboPathProgress />
+
+          {fromDiagnostic && presetInfo && (
+            <LaboPresetBanner preset={presetInfo} onDismiss={dismissPresetBanner} />
+          )}
+
+          <LaboScienceNav />
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             {/* Controls */}
@@ -259,15 +275,7 @@ export default function ModuleLabo() {
                   <span className="w-2 h-6 bg-orange-500 rounded-full" />
                   {t("labo.scenarios")}
                 </div>
-                <div className="grid grid-cols-1 gap-3">
-                  {REAL_SCENARIOS.map(s => (
-                    <button key={s.name} onClick={() => applyScenario(s)}
-                      className="text-left p-4 rounded-xl bg-secondary/30 border border-border/50 hover:border-orange-500/50 hover:bg-orange-500/5 transition-all duration-200 group">
-                      <div className="font-bold text-foreground text-sm group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors">{s.name}</div>
-                      <div className="text-xs text-muted-foreground mt-1.5 leading-relaxed">{pickDesc(s, lang)}</div>
-                    </button>
-                  ))}
-                </div>
+                <LaboScenarioList onApply={applyScenario} />
               </GlassCard>
 
               {/* Results */}
@@ -390,6 +398,16 @@ export default function ModuleLabo() {
               </div>
             </div>
           </div>
+
+          <LaboQuizPanel />
+
+          <button
+            type="button"
+            onClick={() => setActiveModule("prevention")}
+            className="w-full flex items-center justify-center gap-2 px-5 py-4 rounded-2xl border border-primary/30 bg-primary/5 text-sm font-bold hover:bg-primary/10 transition-colors"
+          >
+            <ShieldCheck size={18} /> {t("labo.cta.prevention")}
+          </button>
         </div>
       </div>
     </TooltipProvider>

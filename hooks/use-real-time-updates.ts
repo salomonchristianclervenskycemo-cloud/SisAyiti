@@ -27,11 +27,16 @@ export function useRealTimeUpdates(
 
     return transport.connect(
       (payload) => {
-        if (payload.type === 'events' && Array.isArray(payload.events)) {
-          payload.events.forEach((e) => {
-            const ui = enrichSeismicEvent(
-              dbEventToUI({ ...e, eventTime: new Date(e.eventTime) })
-            )
+        if (payload.type === 'events') {
+          const uiList =
+            payload.ui_events ??
+            (Array.isArray(payload.events)
+              ? payload.events.map((e) =>
+                  enrichSeismicEvent(dbEventToUI({ ...e, eventTime: new Date(e.eventTime) }))
+                )
+              : [])
+
+          uiList.forEach((ui) => {
             prependEvent(ui)
             if (ui.magnitude >= 5) {
               const lang = readStoredLang() ?? 'fr'

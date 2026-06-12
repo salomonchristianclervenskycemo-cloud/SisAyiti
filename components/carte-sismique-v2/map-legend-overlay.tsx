@@ -1,11 +1,40 @@
 'use client'
 
 import { RISK_COLORS } from '@/lib/seismic-map-style'
+import { FAULT_PALETTE } from '@/lib/haiti-fault-geo'
 import type { RiskLevel } from '@/lib/seismic-types'
 import type { Lang } from '@/lib/i18n'
 import { mapLegendOverlayT, mapRiskChipT, toMapLocale } from '@/lib/translations/map'
 
 const RISK_LEVELS: RiskLevel[] = ['critical', 'high', 'medium', 'low']
+
+function FaultSwatch({
+  color,
+  glow,
+  dashed,
+}: {
+  color: string
+  glow: string
+  dashed?: boolean
+}) {
+  return (
+    <div className="relative w-10 h-3 shrink-0">
+      <div
+        className="absolute inset-0 rounded-full blur-[3px] opacity-60"
+        style={{ backgroundColor: glow }}
+      />
+      <div
+        className="absolute top-1/2 -translate-y-1/2 left-0 right-0 h-[3px] rounded-full"
+        style={{
+          background: dashed
+            ? `repeating-linear-gradient(90deg, ${color} 0 5px, transparent 5px 8px)`
+            : `linear-gradient(90deg, #fb923c, ${color}, ${glow})`,
+          boxShadow: `0 0 6px ${glow}88`,
+        }}
+      />
+    </div>
+  )
+}
 
 export function MapLegendOverlay({ lang }: { lang: Lang }) {
   const mapLang = toMapLocale(lang)
@@ -13,7 +42,7 @@ export function MapLegendOverlay({ lang }: { lang: Lang }) {
   const riskLabels = mapRiskChipT[mapLang]
 
   return (
-    <div className="absolute bottom-16 left-16 z-[999] pointer-events-auto max-w-[200px]">
+    <div className="absolute bottom-16 left-16 z-[999] pointer-events-auto max-w-[210px]">
       <div className="rounded-xl bg-black/55 backdrop-blur-xl border border-white/10 shadow-2xl p-3 text-[10px]">
         <h3 className="font-bold text-white/90 uppercase tracking-widest mb-2 flex items-center gap-1.5">
           <span className="w-1 h-3 bg-cyan-400 rounded-full" />
@@ -51,15 +80,15 @@ export function MapLegendOverlay({ lang }: { lang: Lang }) {
           ))}
         </div>
 
-        <p className="text-gray-500 uppercase tracking-wider mb-1">{t.faults}</p>
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-0.5 border-t-2 border-dashed border-orange-500" />
-            <span className="text-gray-300">{t.sept}</span>
+        <p className="text-gray-500 uppercase tracking-wider mb-1.5">{t.faults}</p>
+        <div className="space-y-2">
+          <div className="flex items-center gap-2.5">
+            <FaultSwatch color={FAULT_PALETTE.sept.core} glow={FAULT_PALETTE.sept.glow} dashed />
+            <span className="text-gray-300 leading-tight">{t.sept}</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-0.5 bg-red-500" />
-            <span className="text-gray-300">{t.enriq}</span>
+          <div className="flex items-center gap-2.5">
+            <FaultSwatch color={FAULT_PALETTE.epgf.core} glow={FAULT_PALETTE.epgf.glow} />
+            <span className="text-gray-300 leading-tight">{t.enriq}</span>
           </div>
         </div>
       </div>

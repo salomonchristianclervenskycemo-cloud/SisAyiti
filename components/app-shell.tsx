@@ -5,41 +5,29 @@ import { AppProvider, useApp } from '@/lib/app-context'
 import { LangProvider } from '@/lib/lang-context'
 import { TopBar } from '@/components/top-bar'
 import { Sidebar, BottomNav } from '@/components/navigation'
-import { useSeismicEvents } from '@/hooks/use-seismic-events'
-import { useRealTimeUpdates } from '@/hooks/use-real-time-updates'
-import { useSeismicStore } from '@/lib/seismic-store'
+import { ModuleLoadingShell } from '@/components/ui/module-loading-shell'
+import { CrisisJourneyBanner } from '@/components/crisis/crisis-journey-banner'
+import { OfflinePackInit } from '@/components/education/offline-pack-init'
 
-const HomeScreen = dynamic(() => import('@/components/home-screen'), { loading: () => null })
-const ModuleComprendre = dynamic(() => import('@/components/module-comprendre'), { loading: () => null })
-const ModuleLabo = dynamic(() => import('@/components/module-labo'), { loading: () => null })
-const ModuleVille = dynamic(() => import('@/components/module-ville'), { loading: () => null })
+const moduleLoading = () => <ModuleLoadingShell />
+
+const HomeScreen = dynamic(() => import('@/components/home-screen'), { loading: moduleLoading })
+const ModuleComprendre = dynamic(() => import('@/components/module-comprendre'), { loading: moduleLoading })
+const ModuleLabo = dynamic(() => import('@/components/module-labo'), { loading: moduleLoading })
+const ModuleVille = dynamic(() => import('@/components/module-ville'), { loading: moduleLoading })
 const ModuleCarte = dynamic(
   () => import('@/components/module-carte').then((m) => m.ModuleCarte),
-  { loading: () => null, ssr: false }
+  { loading: moduleLoading, ssr: false }
 )
 const ModulePrevention = dynamic(
   () => import('@/components/module-prevention').then((m) => m.ModulePrevention),
-  { loading: () => null }
+  { loading: moduleLoading }
 )
 const ModuleMultirisques = dynamic(
   () => import('@/components/module-multirisques').then((m) => m.ModuleMultirisques),
-  { loading: () => null }
+  { loading: moduleLoading, ssr: false }
 )
-const ModuleActualite = dynamic(() => import('@/components/module-actualite'), { loading: () => null })
-
-/** Fetch seismic data only when map or monitoring modules are active. */
-function ConditionalDataFetcher() {
-  const { activeModule } = useApp()
-  const needsData = activeModule === 'carte' || activeModule === 'actualite'
-  const fetchDays = useSeismicStore((s) => s.fetchDays)
-  const minMagnitude = useSeismicStore((s) => s.filters?.magnitude?.min ?? 2)
-  const liveEnabled = useSeismicStore((s) => s.liveEnabled)
-
-  useSeismicEvents(needsData ? fetchDays : 0, minMagnitude)
-  useRealTimeUpdates(needsData && liveEnabled)
-
-  return null
-}
+const ModuleActualite = dynamic(() => import('@/components/module-actualite'), { loading: moduleLoading })
 
 function AppContent() {
   const { activeModule } = useApp()
@@ -47,6 +35,8 @@ function AppContent() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <TopBar />
+      <CrisisJourneyBanner />
+      <OfflinePackInit />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />
         <main className="flex-1 overflow-auto md:ml-64 pb-16 md:pb-0">
@@ -69,7 +59,6 @@ export function AppShell() {
   return (
     <LangProvider>
       <AppProvider>
-        <ConditionalDataFetcher />
         <AppContent />
       </AppProvider>
     </LangProvider>

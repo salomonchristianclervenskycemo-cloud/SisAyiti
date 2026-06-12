@@ -166,6 +166,21 @@ model RealTimeAlert {
   @@index([createdAt])
 }
 
+model CommunityHazardReport {
+  id          String   @id @default(cuid())
+  clientId    String?  @unique
+  hazardType  String
+  description String   @default("")
+  severity    String
+  latitude    Float?
+  longitude   Float?
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([severity])
+  @@index([hazardType])
+}
+
 model DailyStatistics {
   id   String   @id @default(cuid())
   date DateTime @unique @db.Date
